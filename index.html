@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Гайд по Алтаю - МАКС</title>
+    <!-- Подключаем API Яндекс Карт -->
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=88572e75-0985-429a-b8fb-714a8ccc46da&lang=ru_RU" type="text/javascript"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; overflow: hidden; background: #f4f7f6; }
+        
+        /* Экран выбора маршрута */
+        #setup-screen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: linear-gradient(135deg, #2c3e50, #4ca1af); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            z-index: 1000; color: white; text-align: center; 
+        }
+        .btn-group { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; width: 80%; max-width: 300px; }
+        button { 
+            padding: 15px 25px; font-size: 18px; cursor: pointer; border: none; 
+            border-radius: 12px; background: white; color: #2c3e50; 
+            font-weight: bold; transition: 0.3s; 
+        }
+        button:hover { background: #e0e0e0; transform: scale(1.05); }
+
+        /* Основной интерфейс */
+        #main-app { display: none; height: 100vh; width: 100vw; position: relative; }
+        #map { width: 100%; height: 100%; }
+
+        /* Панель переключения дней */
+        #day-selector { 
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%); 
+            z-index: 10; display: flex; gap: 10px; background: rgba(255,255,255,0.9); 
+            padding: 10px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+        }
+        .day-btn { 
+            padding: 8px 15px; border: 1px solid #ccc; background: white; 
+            border-radius: 20px; cursor: pointer; font-size: 14px; 
+        }
+        .day-btn.active { background: #2c3e50; color: white; border-color: #2c3e50; }
+
+        /* Кнопка возврата */
+        #back-btn { 
+            position: absolute; bottom: 30px; right: 20px; z-index: 10; 
+            background: white; border-radius: 50%; width: 50px; height: 50px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ЭКРАН 1: ВЫБОР МАРШРУТА -->
+    <div id="setup-screen">
+        <h1>🏔️ Путешествие по Алтаю</h1>
+        <p>Выберите длительность вашей поездки:</p>
+        <div class="btn-group">
+            <button onclick="startApp('2-days')">2 дня (Экспресс)</button>
+            <button onclick="startApp('7-days')">7 дней (Классика)</button>
+            <button onclick="startApp('14-days')">14 дней (Погружение)</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН 2: КАРТА И ГАЙД -->
+    <div id="main-app">
+        <div id="day-selector"></div>
+        <div id="map"></div>
+        <div id="back-btn" onclick="location.reload()">⬅️</div>
+    </div>
+
+    <script>
+        // ДАННЫЕ МАРШРУТОВ (наш JSON)
+        const routesData = {
+            '2-days': {
+                days: [
+                    { day: 1, locations: [
+                        { name: "Остров Патмос", coords: [51.86, 86.05], desc: "Священное место с потрясающим видом на Катунь", price: "Бесплатно" },
+                        { name: "Гейзерное озеро", coords: [51.78, 86.15], desc: "Удивительное озеро с бьющими из дна ключами", price: "100 руб." }
+                    ]},
+                    { day: 2, locations: [
+                        { name: "Перевал Чике-Таман", coords: [50.85, 86.25], desc: "Один из самых красивых и опасных перевалов Алтая", price: "Бесплатно" },
+                        { name: "Чуйский тракт", coords: [50.50, 86.50], desc: "Одна из красивейших дорог мира по версии National Geographic", price: "Бесплатно" }
+                    ]}
+                ]
+            },
+            '7-days': {
+                days: [
+                    { day: 1, locations: [{ name: "Горно-Алтайск", coords: [51.95, 85.96], desc: "Столица Республики Алтай", price: "Бесплатно" }] },
+                    { day: 2, locations: [{ name: "Чемал", coords: [51.88, 86.01], desc: "Центр туризма и отдыха", price: "Бесплатно" }] },
+                    { day: 3, locations: [{ name: "Каракольские озера", coords: [50.45, 86.60], desc: "Кристально чистые горные озера", price: "Бесплатно" }] },
+                    { day: 4, locations: [{ name: "Долина реки Чуя", coords: [50.20, 86.80], desc: "Дикие пейзажи и мощные потоки воды", price: "Бесплатно" }] },
+                    { day: 5, locations: [{ name: "Телецкое озеро", coords: [51.50, 86.50], desc: "Одно из глубочайших озер мира", price: "Катер от 1000р" }] },
+                    { day: 6, locations: [{ name: "Водопады Телецкого", coords: [51.60, 86.60], desc: "Мощные каскады воды в горах", price: "Бесплатно" }] },
+                    { day: 7, locations: [{ name: "Сувенирный рынок", coords: [51.90, 85.90], desc: "Местный мед, чай и изделия из шерсти", price: "По желанию" }] },
+                ]
+            },
+            '14-days': {
+                days: [
+                    { day: 1, locations: [{ name: "Горно-Алтайск", coords: [51.95, 85.96], desc: "Старт путешествия", price: "Бесплатно" }] },
+                    { day: 2, locations: [{ name: "Чемал", coords: [51.88, 86.01], desc: "Отдых у реки", price: "Бесплатно" }] },
+                    { day: 3, locations: [{ name: "Гейзерное озеро", coords: [51.78, 86.15], desc: "Чудо природы", price: "100р" }] },
+                    { day: 4, locations: [{ name: "Телецкое озеро", coords: [51.50, 86.50], desc: "Круиз по озеру", price: "2000р" }] },
+                    { day: 5, locations: [{ name: "Водопады", coords: [51.60, 86.60], desc: "Горные каскады", price: "Бесплатно" }] },
+                    { day: 6, locations: [{ name: "Чике-Таман", coords: [50.85, 86.25], desc: "Горный серпантин", price: "Бесплатно" }] },
+                    { day: 7, locations: [{ name: "Каракольские озера", coords: [50.45, 86.60], desc: "Зеркальная вода", price: "Бесплатно" }] },
+                    { day: 8, locations: [{ name: "Марс (Кызыл-Чин)", coords: [49.80, 87.50], desc: "Пейзажи как на другой планете", price: "Бесплатно" }] },
+                    { day: 9, locations: [{ name: "Долина реки Чуя", coords: [50.20, 86.80], desc: "Дикая природа", price: "Бесплатно" }] },
+                    { day: 10, locations: [{ name: "Плато Укок", coords: [49.00, 87.80], desc: "Край света, мистическое место", price: "Тур от 5000р" }] },
+                    { day: 11, locations: [{ name: "Гора Белуха", coords: [49.70, 86.60], desc: "Высшая точка Сибири", price: "Гид от 3000р" }] },
+                    { day: 12, locations: [{ name: "Аккемское озеро", coords: [49.80, 86.50], desc: "Вид на Белуху", price: "Бесплатно" }] },
+                    { day: 13, locations: [{ name: "Мультинские озера", coords: [50.50, 86.20], desc: "Бирюзовая вода в горах", price: "Бесплатно" }] },
+                    { day: 14, locations: [{ name: "Финиш", coords: [51.95, 85.96], desc: "Конец путешествия", price: "Бесплатно" }] },
+                ]
+            }
+        };
+
+        let myMap;
+        let currentRoute = null;
+        let markers = [];
+
+        function startApp(routeId) {
+            currentRoute = routesData[routeId];
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            
+            // Инициализация карты
+            ymaps.ready(initMap);
+        }
+
+        function initMap() {
+            myMap = new ymaps.Map("map", {
+                center: [51.8, 86.0],
+                zoom: 7,
+                controls: ['zoomControl', 'typeSelector']
+            });
+
+            renderDaySelector();
+            showDay(1);
+        }
+
+        function renderDaySelector() {
+            const selector = document.getElementById('day-selector');
+            currentRoute.days.forEach(d => {
+                const btn = document.createElement('button');
+                btn.innerText = `День ${d.day}`;
+                btn.className = 'day-btn';
+                btn.id = `btn-day-${d.day}`;
+                btn.onclick = () => showDay(d.day);
+                selector.appendChild(btn);
+            });
+        }
+
+        function showDay(dayNum) {
+            // Убираем старые маркеры
+            markers.forEach(m => myMap.geoObjects.remove(m));
+            markers = [];
+
+            // Подсвечиваем кнопку
+            document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-day-${dayNum}`).classList.add('active');
+
+            // Добавляем точки текущего дня
+            const dayData = currentRoute.days.find(d => d.day === dayNum);
+            dayData.locations.forEach(loc => {
+                const placemark = new ymaps.Placemark(loc.coords, {
+                    balloonContentHeader: `<b>${loc.name}</b>`,
+                    balloonContentBody: `${loc.desc}<br><b>Цена: ${loc.price}</b>`
+                });
+                myMap.geoObjects.add(placemark);
+                markers.push(placemark);
+            });
+
+            // Центрируем карту на первой точке дня
+            if (dayData.locations.length > 0) {
+                myMap.setCenter(dayData.locations[0].coords, 9);
+            }
+        }
+    </script>
+</body>
+</html>
