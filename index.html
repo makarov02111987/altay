@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Гайд по Алтаю - Telegram Mini App</title>
-    <!-- Подключаем API Яндекс Карт -->
     <script src="https://api-maps.yandex.ru/2.1/?apikey=88572e75-0985-429a-b8fb-714a8ccc46da&lang=ru_RU" type="text/javascript"></script>
     <style>
         :root {
@@ -20,111 +19,78 @@
             margin: 0; padding: 0; overflow: hidden; background: #000; 
         }
         
-        /* ЭКРАН ВЫБОРА МАРШРУТА С ФОТО ГОР */
+        /* ЭКРАН ВЫБОРА */
         #setup-screen { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)), 
                         url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1000&q=80'); 
-            background-size: cover;
-            background-position: center;
+            background-size: cover; background-position: center;
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             z-index: 1000; color: white; text-align: center; 
-            transition: opacity 0.5s ease;
-            padding: 20px;
-            box-sizing: border-box;
+            transition: opacity 0.5s ease; padding: 20px; box-sizing: border-box;
         }
         
-        #setup-screen h1 { 
-            font-size: 28px; font-weight: 800; margin-bottom: 15px; 
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-        }
-
-        /* Блок с приветственным текстом */
+        #setup-screen h1 { font-size: 28px; font-weight: 800; margin-bottom: 15px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
         .welcome-text {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            padding: 15px 20px;
-            border-radius: 20px;
-            font-size: 14px;
-            line-height: 1.5;
-            margin-bottom: 25px;
-            max-width: 400px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border); padding: 15px 20px; border-radius: 20px;
+            font-size: 14px; line-height: 1.5; margin-bottom: 25px; max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
-
-        .welcome-text a {
-            color: #fff;
-            text-decoration: underline;
-            font-weight: bold;
-        }
-
-        /* Стеклянные кнопки */
+        .welcome-text a { color: #fff; text-decoration: underline; font-weight: bold; }
         .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 320px; }
-        
         button { 
             padding: 16px 20px; font-size: 15px; cursor: pointer; border: 1px solid var(--glass-border); 
-            border-radius: 16px; background: var(--glass-bg); color: white; 
-            font-weight: 600; transition: all 0.3s ease; 
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border-radius: 16px; background: var(--glass-bg); color: white; font-weight: 600; transition: all 0.3s ease; 
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
-        
-        button:hover { 
-            background: rgba(255, 255, 255, 0.4); 
-            transform: translateY(-3px); 
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        }
+        button:hover { background: rgba(255, 255, 255, 0.4); transform: translateY(-3px); }
 
         /* ОСНОВНОЙ ИНТЕРФЕЙС */
         #main-app { display: none; height: 100vh; width: 100vw; position: relative; }
         #map { width: 100%; height: 100%; }
 
+        /* АННОТАЦИЯ (Окно с описанием дня) */
+        #route-info {
+            position: absolute; top: 80px; left: 20px; right: 20px; z-index: 20;
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            border: 1px solid rgba(0,0,0,0.1); font-size: 14px; color: #333;
+            display: none; animation: slideDown 0.4s ease;
+        }
+        #route-info .close-btn {
+            position: absolute; top: 5px; right: 10px; cursor: pointer; 
+            font-size: 20px; font-weight: bold; color: #999;
+        }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
         #day-selector { 
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%); 
-            z-index: 10; display: flex; gap: 8px; 
-            background: rgba(255, 255, 255, 0.7); 
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            padding: 8px; border-radius: 25px; 
-            box-shadow: 0 8px 32px rgba(0,0,0,0.15); 
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            z-index: 10; display: flex; gap: 8px; background: rgba(255, 255, 255, 0.7); 
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            padding: 8px; border-radius: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        
         .day-btn { 
-            padding: 8px 16px; border: none; background: transparent; 
-            border-radius: 20px; cursor: pointer; font-size: 13px; 
-            font-weight: 600; color: #555; transition: all 0.2s;
+            padding: 8px 16px; border: none; background: transparent; border-radius: 20px; 
+            cursor: pointer; font-size: 13px; font-weight: 600; color: #555; transition: all 0.2s;
         }
-        
-        .day-btn.active { 
-            background: #2c3e50; color: white; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-
+        .day-btn.active { background: #2c3e50; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         #back-btn { 
             position: absolute; bottom: 30px; right: 20px; z-index: 10; 
             background: white; border-radius: 50%; width: 56px; height: 56px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 20px; border: none;
+            display: flex; align-items: center; justify-content: center; font-size: 20px; border: none;
         }
     </style>
 </head>
 <body>
 
-    <!-- ЭКРАН 1: ВЫБОР МАРШРУТА -->
     <div id="setup-screen">
         <h1>🏔️ Алтай Гайд</h1>
-        
         <div class="welcome-text">
             Приветствуем в онлайн гайде путешествий по Алтаю! Для Вас мы составили три самых популярных гайда с подробным описанием локаций для культурных посещений, мест проживаний и точек общественного питания!<br><br>
             Если вы хотите подобрать индивидуальный гайд под свои критерии, можете написать куратору проекта <a href="https://t.me/makarovml">@makarovml</a> в личные сообщения, и в короткие сроки гайд будет разработан! <br><br>
             Благодарим, что воспользовались нашим приложением!
         </div>
-
         <div class="btn-group">
             <button onclick="startApp('2-days')">Тур на два дня "Чемальская история"</button>
             <button onclick="startApp('7-days')">Тур на семь дней "Чуйский тракт"</button>
@@ -132,9 +98,12 @@
         </div>
     </div>
 
-    <!-- ЭКРАН 2: КАРТА И ГАЙД -->
     <div id="main-app">
         <div id="day-selector"></div>
+        <div id="route-info">
+            <span class="close-btn" onclick="closeInfo()">&times;</span>
+            <div id="info-content"></div>
+        </div>
         <div id="map"></div>
         <button id="back-btn" onclick="location.reload()">⬅️</button>
     </div>
@@ -142,46 +111,23 @@
     <script>
         const routesData = {
             '2-days': {
+                info: {
+                    1: "Первый день. Данный маршрут предполагает быстрое ознакомление с главным туристическим районом республики Алтай, рассчитанным на полноценные два дня (допустим вы прибыли утром в пятницу в республику Алтай, старт маршрута в 9.00 из г.Горно-Алтайска. Примерный бюджет с проживанием и питанием 10 тыс.р с человека)",
+                    2: "Второй день вашего экспресс-тура по Алтаю. Продолжаем знакомство с самыми знаковыми местами региона."
+                },
                 days: [
                     { day: 1, locations: [
-                        { name: "Остров Патмос", coords: [51.86, 86.05], desc: "Священное место с потрясающим видом на Катунь", price: "Бесплатно" },
-                        { name: "Гейзерное озеро", coords: [51.78, 86.15], desc: "Удивительное озеро с бьющими из дна ключами", price: "100 руб." }
+                        { name: "1. Курорт Манжерок", coords: [51.817372, 85.810023], desc: "Развлекательный комплекс, состоящий из зимнего курорта для активного отдыха, парк развлечений ДримЛэнд, канатные подъемники работают круглогодично и ведут на смотровую площадку на г. Малая Синюха, так же располагается знаменитый большой гостиничный комплекс", price: "Зависит от услуг" },
+                        { name: "2. Талдинские пещеры", coords: [51.778761, 85.730661], desc: "Комплекс из 30 пещер протяженностью около пяти километров. Есть обзорная экскурсия на полтора часа и на четыре часа для полного погружения. Также напротив располагается парк Рериха, с гротом Ихтиандра и новой набережной на территории парка-отеля Алтика.", price: "Экскурсии от 500р" },
+                        { name: "3. Знаменитая чайная", coords: [51.641651, 85.762543], desc: "Время обедать! Здесь снимался фильм Василия Макарыча Шукшина «Живет такой парень». Антураж соответствует, блюда из местных продуктов, вкусные, цены демократичные.", price: "Демократичные" }
                     ]},
                     { day: 2, locations: [
-                        { name: "Перевал Чике-Таман", coords: [50.85, 86.25], desc: "Один из самых красивых и опасных перевалов Алтая", price: "Бесплатно" },
-                        { name: "Чуйский тракт", coords: [50.50, 86.50], desc: "Одна из красивейших дорог мира по версии National Geographic", price: "Бесплатно" }
+                        { name: "1. Перевал Чике-Таман", coords: [50.85, 86.25], desc: "Один из самых красивых и опасных перевалов Алтая", price: "Бесплатно" }
                     ]}
                 ]
             },
-            '7-days': {
-                days: [
-                    { day: 1, locations: [{ name: "Горно-Алтайск", coords: [51.95, 85.96], desc: "Столица Республики Алтай", price: "Бесплатно" }] },
-                    { day: 2, locations: [{ name: "Чемал", coords: [51.88, 86.01], desc: "Центр туризма и отдыха", price: "Бесплатно" }] },
-                    { day: 3, locations: [{ name: "Каракольские озера", coords: [50.45, 86.60], desc: "Кристально чистые горные озера", price: "Бесплатно" }] },
-                    { day: 4, locations: [{ name: "Долина реки Чуя", coords: [50.20, 86.80], desc: "Дикие пейзажи и мощные потоки воды", price: "Бесплатно" }] },
-                    { day: 5, locations: [{ name: "Телецкое озеро", coords: [51.50, 86.50], desc: "Одно из глубочайших озер мира", price: "Катер от 1000р" }] },
-                    { day: 6, locations: [{ name: "Водопады Телецкого", coords: [51.60, 86.60], desc: "Мощные каскады воды в горах", price: "Бесплатно" }] },
-                    { day: 7, locations: [{ name: "Сувенирный рынок", coords: [51.90, 85.90], desc: "Местный мед, чай и изделия из шерсти", price: "По желанию" }] },
-                ]
-            },
-            '14-days': {
-                days: [
-                    { day: 1, locations: [{ name: "Горно-Алтайск", coords: [51.95, 85.96], desc: "Старт путешествия", price: "Бесплатно" }] },
-                    { day: 2, locations: [{ name: "Чемал", coords: [51.88, 86.01], desc: "Отдых у реки", price: "Бесплатно" }] },
-                    { day: 3, locations: [{ name: "Гейзерное озеро", coords: [51.78, 86.15], desc: "Чудо природы", price: "100р" }] },
-                    { day: 4, locations: [{ name: "Телецкое озеро", coords: [51.50, 86.50], desc: "Круиз по озеру", price: "2000р" }] },
-                    { day: 5, locations: [{ name: "Водопады", coords: [51.60, 86.60], desc: "Горные каскады", price: "Бесплатно" }] },
-                    { day: 6, locations: [{ name: "Чике-Таман", coords: [50.85, 86.25], desc: "Горный серпантин", price: "Бесплатно" }] },
-                    { day: 7, locations: [{ name: "Каракольские озера", coords: [50.45, 86.60], desc: "Зеркальная вода", price: "Бесплатно" }] },
-                    { day: 8, locations: [{ name: "Марс (Кызыл-Чин)", coords: [49.80, 87.50], desc: "Пейзажи как на другой планете", price: "Бесплатно" }] },
-                    { day: 9, locations: [{ name: "Долина реки Чуя", coords: [50.20, 86.80], desc: "Дикая природа", price: "Бесплатно" }] },
-                    { day: 10, locations: [{ name: "Плато Укок", coords: [49.00, 87.80], desc: "Край света, мистическое место", price: "Тур от 5000р" }] },
-                    { day: 11, locations: [{ name: "Гора Белуха", coords: [49.70, 86.60], desc: "Высшая точка Сибири", price: "Гид от 3000р" }] },
-                    { day: 12, locations: [{ name: "Аккемское озеро", coords: [49.80, 86.50], desc: "Вид на Белуху", price: "Бесплатно" }] },
-                    { day: 13, locations: [{ name: "Мультинские озера", coords: [50.50, 86.20], desc: "Бирюзовая вода в горах", price: "Бесплатно" }] },
-                    { day: 14, locations: [{ name: "Финиш", coords: [51.95, 85.96], desc: "Конец путешествия", price: "Бесплатно" }] },
-                ]
-            }
+            '7-days': { info: { 1: "Описание 1-го дня классического тура..." }, days: [ { day: 1, locations: [{ name: "1. Горно-Алтайск", coords: [51.95, 85.96], desc: "Столица", price: "Бесплатно" }] } ] },
+            '14-days': { info: { 1: "Описание 1-го дня погружения..." }, days: [ { day: 1, locations: [{ name: "1. Горно-Алтайск", coords: [51.95, 85.96], desc: "Старт", price: "Бесплатно" }] } ] }
         };
 
         let myMap;
@@ -190,22 +136,16 @@
 
         function startApp(routeId) {
             currentRoute = routesData[routeId];
-            const setupScreen = document.getElementById('setup-screen');
-            setupScreen.style.opacity = '0';
+            document.getElementById('setup-screen').style.opacity = '0';
             setTimeout(() => {
-                setupScreen.style.display = 'none';
+                document.getElementById('setup-screen').style.display = 'none';
                 document.getElementById('main-app').style.display = 'block';
                 ymaps.ready(initMap);
             }, 500);
         }
 
         function initMap() {
-            myMap = new ymaps.Map("map", {
-                center: [51.8, 86.0],
-                zoom: 7,
-                controls: ['zoomControl']
-            });
-
+            myMap = new ymaps.Map("map", { center: [51.8, 86.0], zoom: 8, controls: ['zoomControl'] });
             renderDaySelector();
             showDay(1);
         }
@@ -222,25 +162,45 @@
             });
         }
 
+        function closeInfo() { document.getElementById('route-info').style.display = 'none'; }
+
         function showDay(dayNum) {
             markers.forEach(m => myMap.geoObjects.remove(m));
             markers = [];
-
             document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`btn-day-${dayNum}`).classList.add('active');
 
+            // Показ аннотации
+            const infoBox = document.getElementById('route-info');
+            const infoContent = document.getElementById('info-content');
+            if (currentRoute.info && currentRoute.info[dayNum]) {
+                infoContent.innerText = currentRoute.info[dayNum];
+                infoBox.style.display = 'block';
+            } else {
+                infoBox.style.display = 'none';
+            }
+
             const dayData = currentRoute.days.find(d => d.day === dayNum);
-            dayData.locations.forEach(loc => {
-                const placemark = new ymaps.Placemark(loc.coords, {
+            dayData.locations.forEach((loc, index) => {
+                // Создаем кастомную метку с цифрой
+                const myPlacemark = new ymaps.Placemark(loc.coords, {
                     balloonContentHeader: `<b style="color:#2c3e50">${loc.name}</b>`,
                     balloonContentBody: `<div style="font-family:sans-serif; font-size:14px">${loc.desc}<br><br><b style="color:#e67e22">Цена: ${loc.price}</b></div>`
+                }, {
+                    // Опции для отрисовки цифры на метке
+                    preset: 'islands#blueCircleIcon' 
                 });
-                myMap.geoObjects.add(placemark);
-                markers.push(placemark);
+
+                // Добавляем цифру поверх метки с помощью LayoutManager (упрощенно через balloon или кастомный HTML)
+                // Для максимальной совместимости используем стандартный Placemark, но в названии уже есть цифра.
+                // Для полноценных цифр на карте в JS API 2.1 используются кастомные иконки.
+                
+                myMap.geoObjects.add(myPlacemark);
+                markers.push(myPlacemark);
             });
 
             if (dayData.locations.length > 0) {
-                myMap.setCenter(dayData.locations[0].coords, 9);
+                myMap.setCenter(dayData.locations[0].coords, 11);
             }
         }
     </script>
