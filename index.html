@@ -78,14 +78,11 @@
         #stops-panel .panel-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:0 2px 10px; }
         #stops-panel h2 { margin:0; font-size:16px; color:#183b35; }
         #stops-panel .panel-meta { color:#68756f; font-size:11px; margin-top:3px; }
-        #stops-panel .panel-collapse{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:0 13px;border:1px solid rgba(36,76,61,.14);border-radius:13px;background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(231,241,235,.82));color:#245342;font:700 11px inherit;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 3px 10px rgba(25,60,44,.08);transition:background .2s,transform .2s}
-        #stops-panel .panel-collapse:active{transform:scale(.97)}
-        #stops-panel .collapse-chevron{font-size:17px;line-height:1;transition:transform .2s}
         #stops-panel.is-collapsed{height:auto;max-height:76px;overflow:hidden}
         #stops-panel.is-collapsed>:not(.panel-head){display:none!important}
         #stops-panel.is-collapsed .panel-head{margin-bottom:0}
         #stops-panel.is-collapsed .panel-head{margin-bottom:0}
-        @media(max-width:600px){#stops-panel .panel-collapse{min-height:34px;padding:0 11px;font-size:10px}#stops-panel.is-collapsed{max-height:72px}}
+        @media(max-width:600px){#stops-panel.is-collapsed{max-height:72px}}
         .stop-card { display:grid; grid-template-columns:92px 1fr; gap:11px; padding:9px 0; border-top:1px solid #e8eeea; }
         .stop-card img,.stop-placeholder { width:92px; height:92px; object-fit:cover; border-radius:13px; background:#dce9e2; }
         .stop-card .photo-credit { display:inline-block; margin-top:4px; font-size:9px; color:#718078; text-decoration:none; }
@@ -237,9 +234,9 @@
 
 
         /* Мобильная навигация и обновлённые карточки остановок */
-        #mobile-nav{position:absolute;z-index:30;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:6px;width:min(390px,calc(100% - 24px));padding:7px;border:1px solid rgba(255,255,255,.48);border-radius:23px;background:linear-gradient(145deg,rgba(255,255,255,.24),rgba(18,43,36,.68));box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 14px 38px rgba(0,0,0,.28);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%)}
-        #mobile-nav button{flex:1;min-width:0;min-height:49px;border:1px solid rgba(255,255,255,.12);border-radius:17px;background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.015));color:rgba(255,255,255,.88);font-family:inherit;font-size:11px;font-weight:650;line-height:1.2;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;touch-action:manipulation;transition:background .22s ease,color .22s ease,box-shadow .22s ease,border-color .22s ease}
-        #mobile-nav button .nav-icon{font-size:18px;line-height:1}
+        #mobile-nav{position:absolute;z-index:30;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:4px;width:min(340px,calc(100% - 40px));padding:5px;border:1px solid rgba(255,255,255,.48);border-radius:19px;background:linear-gradient(145deg,rgba(255,255,255,.24),rgba(18,43,36,.68));box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 10px 28px rgba(0,0,0,.26);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%)}
+        #mobile-nav button{flex:1;min-width:0;min-height:36px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.015));color:rgba(255,255,255,.88);font-family:inherit;font-size:10px;font-weight:650;line-height:1.15;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;touch-action:manipulation;transition:background .22s ease,color .22s ease,box-shadow .22s ease,border-color .22s ease}
+        #mobile-nav button .nav-icon{font-size:15px;line-height:1}
         #mobile-nav button.active{border-color:rgba(255,255,255,.62);background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(221,239,228,.82));color:#17382f;box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 4px 16px rgba(0,0,0,.18)}
         #mobile-nav button:active{transform:scale(.97)}
         #stops-panel{bottom:calc(78px + env(safe-area-inset-bottom));max-height:min(48vh,440px);scroll-behavior:smooth;touch-action:pan-y;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
@@ -249,7 +246,7 @@
         [class*="balloon__content"] img,[class*="balloon__content"] iframe{max-width:100%!important}
         #stops-panel .panel-head{position:sticky;top:-11px;z-index:2;padding:9px 2px 10px;margin:0 0 7px;background:rgba(247,250,247,.94);backdrop-filter:blur(14px)}
         #stops-panel .panel-head{position:sticky}
-        #stops-panel .panel-drag-handle{position:absolute;top:3px;left:50%;z-index:4;transform:translateX(-50%);width:64px;height:16px;display:flex;align-items:center;justify-content:center;cursor:ns-resize;touch-action:none;user-select:none;-webkit-user-select:none}
+        #stops-panel .panel-drag-handle{position:absolute;top:3px;left:50%;z-index:4;transform:translateX(-50%);width:76px;height:22px;display:flex;align-items:center;justify-content:center;cursor:ns-resize;touch-action:none;user-select:none;-webkit-user-select:none}
         #stops-panel .panel-drag-handle span{display:block;width:34px;height:4px;border-radius:99px;background:rgba(75,103,88,.35);box-shadow:0 1px 0 rgba(255,255,255,.8)}
         #stops-panel .panel-head{padding-top:17px}
         #stops-panel.is-collapsed .panel-head{padding-top:17px}
@@ -379,7 +376,6 @@
             #stops-panel .panel-head{top:-18px;gap:14px;padding:22px 2px 15px;margin:0 0 10px;background:linear-gradient(180deg,rgba(252,254,252,.99),rgba(248,251,248,.96));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
             #stops-panel .panel-head h2{font-size:19px;letter-spacing:-.6px}
             #stops-panel .panel-meta{font-size:12px;margin-top:5px}
-            #stops-panel .panel-collapse{min-height:39px;padding:0 14px;font-size:11px}
             #stops-panel .panel-drag-handle{top:2px;width:80px;height:15px}
             #stops-panel .panel-drag-handle span{width:42px;height:4px;background:rgba(68,105,81,.32)}
             .stop-card{grid-template-columns:clamp(112px,10vw,142px) minmax(0,1fr);gap:15px;padding:16px 2px;border-top-color:rgba(34,76,59,.12)}
@@ -909,9 +905,8 @@
             panel.classList.remove('is-collapsed');
             panel.style.height = '';
             panel.style.maxHeight = '';
-            panel.innerHTML = '<div class="panel-head"><div class="panel-drag-handle" role="separator" aria-orientation="horizontal" aria-label="Потяните вверх или вниз, чтобы изменить высоту списка"><span></span></div><div><h2>' + panelTitle + '</h2><div class="panel-meta">' + panelMeta + '</div></div><button class="panel-collapse" type="button" aria-expanded="true" aria-label="Свернуть список мест" title="Свернуть список мест"><span class="collapse-label">Свернуть</span><span class="collapse-chevron">⌄</span></button></div><div class="stops-list"></div>';
+            panel.innerHTML = '<div class="panel-head"><div class="panel-drag-handle" role="separator" aria-orientation="horizontal" aria-label="Потяните вниз, чтобы убрать список, или вверх, чтобы развернуть"><span></span></div><div><h2>' + panelTitle + '</h2><div class="panel-meta">' + panelMeta + '</div></div></div><div class="stops-list"></div>';
             const listContainer = panel.querySelector('.stops-list');
-            const collapseButton = panel.querySelector('.panel-collapse');
             const dragHandle = panel.querySelector('.panel-drag-handle');
             let dragStartY = 0;
             let dragStartHeight = 0;
@@ -938,38 +933,20 @@
                 if (dragPointerId !== event.pointerId) return;
                 dragPointerId = null;
                 const height = panel.getBoundingClientRect().height;
-                if (height < 112) {
+                const swipeDown = event.clientY - dragStartY > 55;
+                if (swipeDown || height < 112) {
                     panel.classList.add('is-collapsed');
                     panel.style.height = '';
                     panel.style.maxHeight = '';
-                    collapseButton.setAttribute('aria-expanded', 'false');
-                    collapseButton.setAttribute('aria-label', 'Развернуть список мест');
-                    collapseButton.title = 'Развернуть список мест';
-                    collapseButton.querySelector('.collapse-label').textContent = 'Показать места';
-                    collapseButton.querySelector('.collapse-chevron').textContent = '⌃';
+                    panel.style.overflow = 'hidden';
                 } else {
                     panel.classList.remove('is-collapsed');
                     panel.style.maxHeight = 'none';
-                    collapseButton.setAttribute('aria-expanded', 'true');
-                    collapseButton.setAttribute('aria-label', 'Свернуть список мест');
-                    collapseButton.title = 'Свернуть список мест';
-                    collapseButton.querySelector('.collapse-label').textContent = 'Свернуть';
-                    collapseButton.querySelector('.collapse-chevron').textContent = '⌄';
+                    panel.style.overflow = '';
                 }
             };
             dragHandle.onpointerup = finishPanelDrag;
             dragHandle.onpointercancel = finishPanelDrag;
-            collapseButton.onclick = () => {
-                const collapsed = panel.classList.toggle('is-collapsed');
-                panel.style.height = collapsed ? '72px' : '';
-                panel.style.maxHeight = collapsed ? '72px' : '';
-                panel.style.overflow = collapsed ? 'hidden' : '';
-                collapseButton.setAttribute('aria-expanded', String(!collapsed));
-                collapseButton.setAttribute('aria-label', collapsed ? 'Развернуть список мест' : 'Свернуть список мест');
-                collapseButton.title = collapsed ? 'Развернуть список мест' : 'Свернуть список мест';
-                collapseButton.querySelector('.collapse-label').textContent = collapsed ? 'Показать места' : 'Свернуть';
-                collapseButton.querySelector('.collapse-chevron').textContent = collapsed ? '⌃' : '⌄';
-            };
             if (firstName.includes('Остров Патмос')) {
                 const routeLinks = document.createElement('div');
                 routeLinks.className = 'stop-actions';
