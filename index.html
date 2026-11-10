@@ -243,6 +243,21 @@
         .stop-card.is-expanded .stop-description{display:block;overflow:visible}
         .stop-card .stop-more{margin:0 0 7px;padding:4px 0;border:0;background:transparent;color:#39745c;font-size:11px;font-weight:800;cursor:pointer}
         .stop-card .stop-details{min-width:0}
+        .stop-category{display:inline-flex;align-items:center;max-width:calc(100% - 34px);margin:0 0 5px;padding:4px 8px;border:1px solid rgba(65,112,83,.15);border-radius:20px;background:linear-gradient(135deg,rgba(226,240,229,.92),rgba(244,248,243,.86));color:#547663;font-size:9px;font-weight:800;letter-spacing:.45px;text-transform:uppercase}
+        .stop-card h3{margin-top:0}
+        .stop-extra{display:none;margin-top:5px}
+        .stop-card.is-expanded .stop-extra{display:block}
+        .stop-meta{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 9px}
+        .stop-meta span{display:inline-flex;align-items:center;min-height:25px;padding:5px 8px;border:1px solid rgba(57,105,77,.12);border-radius:9px;background:rgba(231,241,233,.72);color:#547262;font-size:10px;font-weight:650}
+        .stop-tip{margin:8px 0 2px;padding:10px 11px;border-left:3px solid #91b99b;border-radius:0 11px 11px 0;background:linear-gradient(110deg,rgba(229,240,231,.8),rgba(245,248,244,.72))}
+        .stop-tip strong{display:block;margin-bottom:4px;color:#315b45;font-size:10px;font-weight:850;letter-spacing:.35px}
+        .stop-tip p{margin:0;color:#5b6f63;font-size:11px;line-height:1.5}
+        .stop-media{position:relative;overflow:hidden;border-radius:13px}
+        .stop-media img{transition:transform .35s ease,filter .35s ease}
+        .stop-card.is-expanded .stop-description{-webkit-line-clamp:unset}
+        .stop-card .stop-more{display:inline-flex;align-items:center;gap:5px;padding:5px 0}
+        .stop-card .stop-more:after{content:"";width:14px;height:1px;background:#8eae98}
+        @media(max-width:600px){.stop-category{font-size:8px;padding:4px 7px}.stop-meta span{font-size:9px;min-height:23px;padding:4px 7px}.stop-tip{padding:8px 9px}}
         .stop-card .coords{overflow-wrap:anywhere}
         #photo-viewer{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,12,10,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
         #photo-viewer.open{display:flex}
@@ -701,6 +716,16 @@
             return `https://yandex.ru/maps/?text=${encodeURIComponent(loc.mapQuery || cleanStopName(loc.name))}`;
         }
 
+        function getStopCategory(loc) {
+            const value = (cleanStopName(loc.name) + ' ' + (loc.desc || '')).toLowerCase();
+            if (/музе|петроглиф|курган|стел|изваяни|истор|памятник|мегалит|патмос|гэс/.test(value)) return 'История и культура';
+            if (/водопад|озер|река|катун|ущель|скал|гриб|перевал|степ|гора|панорам|смотров|урочище|долин/.test(value)) return 'Природа и панорамы';
+            if (/конн|лошад|хаски|олен|питомник|пещер|тропа|прогул|рафтинг/.test(value)) return 'Активный отдых';
+            if (/чай|ресторан|кафе|рынок|форел|обед|еда/.test(value)) return 'Вкус Алтая';
+            if (/база отдыха|отдых|курорт|отель|заселени/.test(value)) return 'Отдых';
+            return 'Остановка маршрута';
+        }
+
         function renderStopCards(locations) {
             const panel = document.getElementById('stops-panel');
             const firstName = locations[0]?.name || '';
@@ -729,7 +754,7 @@
                 const meta = [coords ? '📍 ' + coords : '', loc.time ? '⏱ ' + loc.time : ''].filter(Boolean).join(' · ');
                 const focusBtn = loc.coords ? '<button type="button" class="focus-stop">На карте</button>' : '';
                 const cleanName = cleanStopName(loc.name);
-                card.innerHTML = `${image}<div class="stop-details"><h3>${index + 1}. ${cleanName}</h3><button type="button" class="favorite-toggle ${isFavorite(loc) ? 'saved' : ''}" data-favorite-key="${favoriteKey({ routeId: currentRouteId, day: currentDayNumber, name: cleanName })}" aria-label="${isFavorite(loc) ? 'Убрать из избранного' : 'Добавить в избранное'}">${isFavorite(loc) ? '♥' : '♡'}</button><p class="stop-description">${loc.desc || ''}</p><button class="stop-more" type="button">Подробнее ↓</button><div class="coords" ${meta ? "" : "hidden"}>${meta}</div><p>${loc.tips || ''}</p><div class="stop-actions"><a href="${yandexUrl(loc)}" target="_blank" rel="noopener">Яндекс Карты ↗</a>${focusBtn}</div></div>`;
+                card.innerHTML = `function () { [native code] }<div class="stop-details"><div class="stop-category">${getStopCategory(loc)}</div><h3>${index + 1}. ${cleanName}</h3><button type="button" class="favorite-toggle ${isFavorite(loc) ? 'saved' : ''}" data-favorite-key="${favoriteKey({ routeId: currentRouteId, day: currentDayNumber, name: cleanName })}" aria-label="${isFavorite(loc) ? 'Убрать из избранного' : 'Добавить в избранное'}">${isFavorite(loc) ? '♥' : '♡'}</button><p class="stop-description">${loc.desc || ''}</p><button class="stop-more" type="button">Подробнее ↓</button><div class="stop-extra"><div class="stop-meta">${meta ? meta.split(' · ').map(item => `<span>${item}</span>`).join('') : ''}</div>${loc.tips ? `<div class="stop-tip"><strong>Полезно знать</strong><p>${loc.tips}</p></div>` : ''}</div><div class="stop-actions"><a href="${yandexUrl(loc)}" target="_blank" rel="noopener">Яндекс Карты ↗</a>${focusBtn}</div></div>`;
                 const favoriteButton = card.querySelector('.favorite-toggle');
                 if (favoriteButton) favoriteButton.onclick = () => toggleFavorite(loc);
                 const more = card.querySelector('.stop-more');
