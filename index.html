@@ -734,7 +734,70 @@
             #stops-panel.is-dragging{transition:none!important}
             #stops-panel .stops-list{touch-action:pan-y!important}
         }
-    </style>
+    
+        /* Final layout fixes: desktop edge-to-edge list + genuinely resizable mobile sheet */
+        @media (min-width:900px){
+            #stops-panel{
+                padding:0!important;
+                overflow-x:hidden!important;
+                background:linear-gradient(180deg,rgba(250,253,250,.98),rgba(235,243,237,.98))!important;
+            }
+            #stops-panel>.panel-head{
+                width:100%!important;
+                box-sizing:border-box!important;
+                margin:0!important;
+                padding:24px 24px 18px!important;
+            }
+            #stops-panel>.stops-list{
+                display:flex!important;
+                flex:1 0 auto!important;
+                flex-direction:column!important;
+                align-self:stretch!important;
+                width:100%!important;
+                min-width:0!important;
+                min-height:100%!important;
+                margin:0!important;
+                padding:0!important;
+                box-sizing:border-box!important;
+                background:linear-gradient(180deg,rgba(250,253,250,.98),rgba(235,243,237,.98))!important;
+            }
+            #stops-panel>.stops-list>.stop-card{
+                display:grid!important;
+                flex:1 0 auto!important;
+                width:100%!important;
+                min-width:0!important;
+                box-sizing:border-box!important;
+                margin:0!important;
+                padding:16px 24px!important;
+                border-radius:0!important;
+                background:linear-gradient(90deg,rgba(245,250,246,.98),rgba(239,247,241,.98))!important;
+                border-top:1px solid rgba(34,76,59,.12)!important;
+                border-bottom:1px solid rgba(34,76,59,.08)!important;
+            }
+            #stops-panel>.stops-list>.stop-card:last-child{border-bottom:0!important}
+        }
+        @media (max-width:600px){
+            /* The JS drag code sets inline height. These defaults must NOT be !important. */
+            #stops-panel{
+                height:43dvh;
+                max-height:82dvh;
+                min-height:76px;
+            }
+            #stops-panel .panel-head{
+                touch-action:none!important;
+                cursor:ns-resize!important;
+                user-select:none!important;
+                -webkit-user-select:none!important;
+            }
+            #stops-panel .panel-drag-handle{
+                display:flex!important;
+                pointer-events:none!important;
+            }
+            #stops-panel.is-dragging{
+                transition:none!important;
+            }
+        }
+</style>
 </head>
 <body>
 
