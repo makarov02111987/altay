@@ -411,6 +411,38 @@
             #stops-panel.is-dragging{transition:none!important}
         }
 
+        /* Desktop sidebar: extend the places list surface to the full panel edges */
+        @media(min-width:900px){
+            #stops-panel{
+                padding:0!important;
+                overflow-y:auto;
+                overflow-x:hidden;
+            }
+            #stops-panel .panel-head{
+                box-sizing:border-box;
+                width:100%;
+                padding:24px 24px 18px!important;
+                margin:0!important;
+            }
+            #stops-panel .stops-list{
+                flex:1 0 auto;
+                width:100%;
+                min-height:100%;
+                box-sizing:border-box;
+                align-self:stretch;
+                margin:0;
+                padding:0;
+                background:linear-gradient(180deg,rgba(250,253,250,.42),rgba(235,243,237,.62));
+            }
+            #stops-panel .stop-card{
+                box-sizing:border-box;
+                width:100%;
+                padding:16px 24px!important;
+                margin:0;
+                flex:1 0 auto;
+            }
+        }
+
         /* Desktop layout: dedicated places sidebar + spacious map workspace */
         @media (min-width: 900px) {
             #main-app{--desktop-sidebar:clamp(350px,30vw,440px);overflow:hidden;background:#e8eee9}
