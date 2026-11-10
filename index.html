@@ -492,6 +492,48 @@
             box-shadow:inset 0 1px 0 #fff,0 3px 10px rgba(38,77,49,.12)!important;
         }
         #mobile-nav button.active .nav-icon{color:#315d40!important}
+
+        
+        /* Mobile dock: same dimensions and Liquid Glass treatment as day buttons */
+        @media (max-width:600px){
+            #mobile-nav{
+                width:calc(100% - 20px)!important;
+                padding:7px!important;
+                gap:5px!important;
+                border-radius:18px!important;
+                background:rgba(255,255,255,.17)!important;
+                border:1px solid rgba(255,255,255,.38)!important;
+                box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 10px 30px rgba(0,0,0,.16)!important;
+                -webkit-backdrop-filter:blur(10px) saturate(125%)!important;
+                backdrop-filter:blur(10px) saturate(125%)!important;
+            }
+            #mobile-nav button{
+                min-height:42px!important;
+                padding:8px 10px!important;
+                border-radius:13px!important;
+                border:1px solid rgba(255,255,255,.22)!important;
+                background:rgba(255,255,255,.10)!important;
+                color:#fff!important;
+                font-size:12px!important;
+                font-weight:700!important;
+                line-height:1.1!important;
+                text-shadow:0 1px 5px rgba(0,0,0,.25)!important;
+                box-shadow:inset 0 1px 0 rgba(255,255,255,.2)!important;
+            }
+            #mobile-nav button .nav-icon{
+                color:inherit!important;
+                font-size:17px!important;
+                line-height:1!important;
+            }
+            #mobile-nav button.active{
+                background:rgba(255,255,255,.82)!important;
+                border-color:rgba(255,255,255,.72)!important;
+                color:#17382f!important;
+                text-shadow:none!important;
+                box-shadow:inset 0 1px 0 #fff,0 3px 12px rgba(0,0,0,.13)!important;
+            }
+            #mobile-nav button.active .nav-icon{color:#17382f!important}
+        }
     </style>
 </head>
 <body>
