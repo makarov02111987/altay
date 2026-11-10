@@ -451,22 +451,22 @@
             #mobile-nav {
                 width: min(340px, calc(100% - 32px));
                 min-height: 0;
-                padding: 5px;
-                gap: 4px;
-                border-radius: 20px;
+                padding: 4px;
+                gap: 3px;
+                border-radius: 18px;
             }
             #mobile-nav button {
-                min-height: 39px;
-                padding: 4px 2px;
-                font-size: 9px;
-                gap: 2px;
-                border-radius: 14px;
-            }
-            #mobile-nav button .nav-icon { font-size: 16px; }
-            #mobile-nav button small {
-                min-width: 14px;
-                height: 14px;
+                min-height: 33px;
+                padding: 3px 2px;
                 font-size: 8px;
+                gap: 2px;
+                border-radius: 12px;
+            }
+            #mobile-nav button .nav-icon { font-size: 14px; }
+            #mobile-nav button small {
+                min-width: 12px;
+                height: 12px;
+                font-size: 7px;
             }
         }
     </style>
@@ -510,7 +510,7 @@
         <nav id="mobile-nav" aria-label="Навигация по приложению">
             <button id="nav-places" class="active" type="button" onclick="showPlaces()"><span class="nav-icon">☷</span><span>Места</span></button>
             <button id="nav-map" type="button" onclick="showMap()"><span class="nav-icon">⌖</span><span>Карта</span></button>
-            <button id="nav-favorites" type="button" onclick="showFavorites()"><span class="nav-icon">♡</span><span>Избранное <small id="favorite-count">0</small></span></button>
+            <button id="nav-menu" type="button" onclick="goHome()"><span class="nav-icon">⌂</span><span>В меню</span></button>
         </nav>
     </div>
     <section id="place-detail" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Информация о достопримечательности">
