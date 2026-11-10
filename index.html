@@ -371,6 +371,11 @@
         /* Desktop layout: dedicated places sidebar + spacious map workspace */
         @media (min-width: 900px) {
             #main-app{--desktop-sidebar:clamp(350px,30vw,440px);overflow:hidden;background:#e8eee9}
+            #main-app.map-expanded #map{inset:0!important;width:100%!important;height:100%!important;border-radius:0!important;box-shadow:none!important;transition:inset .35s ease,width .35s ease,border-radius .35s ease}
+            #main-app.map-expanded #stops-panel{display:none!important}
+            #main-app.map-expanded #day-selector{left:50%;max-width:calc(100% - 80px)}
+            #main-app.map-expanded #route-info{left:50%;right:auto;width:min(680px,calc(100% - 64px));transform:translateX(-50%)}
+            #map{transition:inset .35s ease,width .35s ease,border-radius .35s ease}
             #map{position:absolute;inset:0 0 0 calc(var(--desktop-sidebar) + 48px);width:auto;height:100%;border-radius:24px 0 0 24px;overflow:hidden;box-shadow:-12px 0 38px rgba(18,48,35,.08)}
             #stops-panel{top:88px;bottom:24px;left:24px;right:auto;width:var(--desktop-sidebar);max-height:none;height:auto;box-sizing:border-box;padding:18px 19px 22px;border-radius:24px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(74,112,88,.28) transparent}
             #stops-panel .panel-head{top:-18px;gap:14px;padding:22px 2px 15px;margin:0 0 10px;background:linear-gradient(180deg,rgba(252,254,252,.99),rgba(248,251,248,.96));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
@@ -778,15 +783,21 @@
         }
 
         function showPlaces() {
+            const app = document.getElementById('main-app');
             const panel = document.getElementById('stops-panel');
+            app.classList.remove('map-expanded');
             panel.style.display = 'block';
             panel.scrollTop = 0;
             setNavActive('nav-places');
+            if (myMap) requestAnimationFrame(() => myMap.container.fitToViewport());
         }
         function showMap() {
-            document.getElementById('stops-panel').style.display = 'none';
+            const app = document.getElementById('main-app');
+            const panel = document.getElementById('stops-panel');
+            app.classList.add('map-expanded');
+            panel.style.display = 'none';
             setNavActive('nav-map');
-            if (myMap) myMap.container.fitToViewport();
+            if (myMap) requestAnimationFrame(() => myMap.container.fitToViewport());
         }
         function setNavActive(id) {
             document.querySelectorAll('#mobile-nav button').forEach(button => button.classList.toggle('active', button.id === id));
