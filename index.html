@@ -614,7 +614,10 @@
                 overflow:hidden!important;
                 border-radius:20px 20px 0 0!important;
             }
-            #stops-panel.is-collapsed .panel-head{margin:0!important;padding-top:18px!important;border:0!important}
+            #stops-panel.is-collapsed .panel-head{min-height:28px!important;height:28px!important;margin:0!important;padding:18px 0 0!important;border:0!important;display:flex!important;align-items:flex-start!important;justify-content:center!important}
+            #stops-panel.is-collapsed .panel-heading-copy{display:none!important}
+            #stops-panel.is-collapsed .panel-drag-handle{top:0!important;height:28px!important}
+            #stops-panel.is-collapsed .panel-drag-handle span{width:46px!important;height:5px!important;background:rgba(55,91,69,.48)!important}
             #stops-panel.is-dragging{transition:none!important}
             #stops-panel .stops-list{touch-action:pan-y!important}
         }
@@ -1156,11 +1159,10 @@
                 };
                 const finishPanelDrag = event => {
                     if (dragPointerId !== event.pointerId) return;
-                    const swipeDown = event.clientY - dragStartY > 45;
                     const height = panel.getBoundingClientRect().height;
                     dragPointerId = null;
                     panel.classList.remove('is-dragging');
-                    if (swipeDown || height < 125) {
+                    if (height <= 138) {
                         panel.classList.add('is-collapsed');
                         panel.style.height = '';
                         panel.style.maxHeight = '';
@@ -1168,7 +1170,7 @@
                     } else {
                         panel.classList.remove('is-collapsed');
                         panel.style.maxHeight = '82dvh';
-                        panel.style.height = '';
+                        panel.style.height = Math.round(height) + 'px';
                         panel.style.overflow = 'auto';
                     }
                 };
