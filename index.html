@@ -439,6 +439,30 @@
                 box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 8px 22px rgba(0,0,0,.16) !important;
             }
         }
+
+        /* Final mobile navigation sizing: compact dock without changing desktop */
+        @media (max-width: 600px) {
+            #mobile-nav {
+                width: min(340px, calc(100% - 32px));
+                min-height: 0;
+                padding: 5px;
+                gap: 4px;
+                border-radius: 20px;
+            }
+            #mobile-nav button {
+                min-height: 39px;
+                padding: 4px 2px;
+                font-size: 9px;
+                gap: 2px;
+                border-radius: 14px;
+            }
+            #mobile-nav button .nav-icon { font-size: 16px; }
+            #mobile-nav button small {
+                min-width: 14px;
+                height: 14px;
+                font-size: 8px;
+            }
+        }
     </style>
 </head>
 <body>
