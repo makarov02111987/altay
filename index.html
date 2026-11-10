@@ -262,10 +262,20 @@
                 
                 myMap.geoObjects.add(myPlacemark);
                 markers.push(myPlacemark);
+                (loc.extraCoords || []).forEach(extra => {
+                    const subMarker = new ymaps.Placemark(extra.coords, {
+                        balloonContentHeader: extra.label,
+                        balloonContentBody: 'Дополнительная точка локации'
+                    }, { preset: 'islands#orangeCircleDotIcon' });
+                    myMap.geoObjects.add(subMarker);
+                    markers.push(subMarker);
+                });
             });
 
             if (dayData.locations.length > 0) {
-                myMap.setCenter(dayData.locations[0].coords, 11);
+                const bounds = myMap.geoObjects.getBounds();
+                if (bounds) myMap.setBounds(bounds, { checkZoomRange: true, zoomMargin: 35 });
+                else if (dayData.locations[0].coords) myMap.setCenter(dayData.locations[0].coords, 11);
             }
         }
     </script>
