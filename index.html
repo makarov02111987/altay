@@ -407,16 +407,17 @@
             #main-app.map-expanded #route-info{left:50%;right:auto;width:min(680px,calc(100% - 64px));transform:translateX(-50%)}
             #map{transition:inset .35s ease,width .35s ease,border-radius .35s ease}
             #map{position:absolute;inset:0 0 0 calc(var(--desktop-sidebar) + 48px);width:auto;height:100%;border-radius:24px 0 0 24px;overflow:hidden;box-shadow:-12px 0 38px rgba(18,48,35,.08)}
-            #stops-panel{top:18px;bottom:18px;left:18px;right:auto;width:var(--desktop-sidebar);max-height:none;height:auto;box-sizing:border-box;padding:0 19px 18px;border-radius:24px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(74,112,88,.28) transparent;display:flex;flex-direction:column}
-            #stops-panel .panel-head{position:sticky;top:0;z-index:5;flex:0 0 auto;gap:14px;padding:24px 2px 18px;margin:0 0 8px;background:linear-gradient(180deg,rgba(252,254,252,.99),rgba(248,251,248,.96));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+            #stops-panel{position:absolute;top:18px;bottom:18px;left:18px;right:auto;width:var(--desktop-sidebar);height:auto;min-height:0;max-height:none;box-sizing:border-box;padding:0;border-radius:24px;display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(74,112,88,.28) transparent}
+            #stops-panel .panel-head{position:relative;top:auto;z-index:5;grid-row:1;min-width:0;width:100%;box-sizing:border-box;gap:14px;padding:24px 21px 18px;margin:0;background:linear-gradient(180deg,rgba(252,254,252,.99),rgba(248,251,248,.96));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
             #stops-panel .panel-heading-copy{min-width:0;flex:1}
             #stops-panel .panel-head h2{font-size:19px;letter-spacing:-.6px}
             #stops-panel .panel-meta{font-size:12px;margin-top:5px}
             #stops-panel .panel-drag-handle{display:none!important}
             #stops-panel .panel-close{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;min-height:38px;padding:0;border:1px solid rgba(72,111,87,.16);border-radius:13px;background:rgba(230,240,232,.82);color:#315c45;font:inherit;font-size:27px;font-weight:400;line-height:1;box-shadow:inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer}
-            #stops-panel .stops-list{flex:1 0 auto;min-height:100%;width:100%;box-sizing:border-box;display:flex;flex-direction:column;align-self:stretch;background:linear-gradient(180deg,rgba(250,253,250,.18),rgba(235,243,237,.34))}
-            #stops-panel .stop-card{flex:1 0 auto;min-width:0;border-bottom:1px solid rgba(34,76,59,.12)}
-            #stops-panel .stop-card:last-child{border-bottom:0}
+            #stops-panel .stops-list{grid-row:2;display:flex;flex-direction:column;align-items:stretch;align-self:stretch;width:100%;min-width:0;min-height:0;height:auto;margin:0;padding:0;box-sizing:border-box;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;background:linear-gradient(180deg,#f5faf6,#eaf2ec)}
+            #stops-panel .stops-list>.stop-card{display:grid;flex:1 0 auto;width:100%;min-width:0;box-sizing:border-box;margin:0;padding:16px 21px;border-radius:0;background:linear-gradient(90deg,#f2f8f3,#eaf3ec);border-top:1px solid rgba(34,76,59,.12);border-bottom:1px solid rgba(34,76,59,.08)}
+            #stops-panel .stops-list>.stop-card:last-child{border-bottom:0}
+            #stops-panel .stops-list>:not(.stop-card){flex:0 0 auto;width:100%;box-sizing:border-box}
             #stops-panel.is-collapsed{height:auto;max-height:none}
             #stops-panel.is-collapsed>:not(.panel-head){display:block!important}
             .stop-card{grid-template-columns:clamp(112px,10vw,142px) minmax(0,1fr);gap:15px;padding:16px 2px;border-top-color:rgba(34,76,59,.12)}
@@ -652,15 +653,16 @@
             #stops-panel .stops-list{touch-action:pan-y!important}
         }
     
-        /* Panel layout source of truth: view state controls visibility; each viewport owns its geometry. */
+        /* Panel layout source of truth: desktop uses a two-row grid; mobile keeps its draggable sheet. */
         #main-app.map-expanded #stops-panel{display:none!important}
         #main-app:not(.map-expanded) #stops-panel{display:flex}
         @media (min-width:900px){
-            #stops-panel{display:flex!important;flex-direction:column!important;min-height:0!important;padding:0!important;overflow:hidden!important}
-            #stops-panel>.panel-head{flex:0 0 auto!important;width:100%!important;box-sizing:border-box!important;margin:0!important}
-            #stops-panel>.stops-list{display:flex!important;flex:1 1 0!important;flex-direction:column!important;align-self:stretch!important;width:100%!important;min-width:0!important;min-height:0!important;height:auto!important;margin:0!important;padding:0!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important;background:linear-gradient(180deg,#f5faf6,#eaf2ec)!important}
-            #stops-panel>.stops-list>.stop-card{display:grid!important;flex:1 0 auto!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding:16px 24px!important;border-radius:0!important;background:linear-gradient(90deg,#f2f8f3,#eaf3ec)!important;border-top:1px solid rgba(34,76,59,.12)!important;border-bottom:1px solid rgba(34,76,59,.08)!important}
+            #stops-panel{display:grid!important;grid-template-rows:auto minmax(0,1fr)!important;grid-auto-flow:row!important;min-height:0!important;height:auto!important;padding:0!important;overflow:hidden!important}
+            #stops-panel>.panel-head{grid-row:1!important;flex:none!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important}
+            #stops-panel>.stops-list{grid-row:2!important;display:flex!important;flex:initial!important;flex-direction:column!important;align-items:stretch!important;align-self:stretch!important;width:100%!important;min-width:0!important;min-height:0!important;height:auto!important;margin:0!important;padding:0!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important;background:linear-gradient(180deg,#f5faf6,#eaf2ec)!important}
+            #stops-panel>.stops-list>.stop-card{display:grid!important;flex:1 0 auto!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding:16px 21px!important;border-radius:0!important;background:linear-gradient(90deg,#f2f8f3,#eaf3ec)!important;border-top:1px solid rgba(34,76,59,.12)!important;border-bottom:1px solid rgba(34,76,59,.08)!important}
             #stops-panel>.stops-list>.stop-card:last-child{border-bottom:0!important}
+            #stops-panel>.stops-list>:not(.stop-card){flex:0 0 auto!important;width:100%!important;box-sizing:border-box!important}
         }
         @media (max-width:600px){
             #main-app.map-expanded #stops-panel{display:none!important}
