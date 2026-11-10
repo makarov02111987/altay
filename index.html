@@ -742,6 +742,58 @@
             #stops-panel.is-collapsed{height:68px!important;min-height:68px!important;max-height:68px!important}
             #stops-panel.is-dragging{transition:none!important}
         }
+
+        /* Correct view switching on every viewport: the map state, not inline display,
+           owns panel visibility. This avoids the mobile display:flex !important clash. */
+        #main-app.map-expanded #stops-panel{display:none!important}
+        #main-app:not(.map-expanded) #stops-panel{display:flex}
+        @media (min-width:900px){
+            #stops-panel{
+                position:absolute!important;
+                top:18px!important;
+                bottom:18px!important;
+                left:18px!important;
+                height:auto!important;
+                max-height:none!important;
+                min-height:0!important;
+                display:flex!important;
+                flex-direction:column!important;
+                overflow:hidden!important;
+                padding:0!important;
+            }
+            #stops-panel>.panel-head{
+                flex:0 0 auto!important;
+                width:100%!important;
+                margin:0!important;
+                box-sizing:border-box!important;
+            }
+            #stops-panel>.stops-list{
+                display:flex!important;
+                flex:1 1 0!important;
+                min-height:0!important;
+                height:auto!important;
+                width:100%!important;
+                margin:0!important;
+                padding:0!important;
+                overflow-y:auto!important;
+                overflow-x:hidden!important;
+                box-sizing:border-box!important;
+            }
+            #stops-panel>.stops-list>.stop-card{
+                flex:1 1 0!important;
+                min-height:0!important;
+                width:100%!important;
+                margin:0!important;
+                box-sizing:border-box!important;
+            }
+        }
+        @media (max-width:600px){
+            #main-app.map-expanded #stops-panel{display:none!important}
+            #main-app:not(.map-expanded) #stops-panel{display:flex!important}
+            #stops-panel{touch-action:pan-y!important}
+            #stops-panel .panel-head,
+            #stops-panel .panel-drag-handle{touch-action:none!important}
+        }
 </style>
 </head>
 <body>
@@ -980,9 +1032,20 @@
         function startApp(routeId, dayNum = 1) {
             try {
                 if (window.Telegram && Telegram.WebApp) {
-                    Telegram.WebApp.ready();
-                    if (typeof Telegram.WebApp.expand === 'function') Telegram.WebApp.expand();
-                    if (typeof Telegram.WebApp.disableVerticalSwipes === 'function') Telegram.WebApp.disableVerticalSwipes();
+                    const webApp = Telegram.WebApp;
+                    webApp.ready();
+                    const lockVerticalSwipes = () => {
+                        try {
+                            if (typeof webApp.disableVerticalSwipes === 'function') webApp.disableVerticalSwipes();
+                        } catch (e) {}
+                    };
+                    if (typeof webApp.expand === 'function') webApp.expand();
+                    lockVerticalSwipes();
+                    requestAnimationFrame(lockVerticalSwipes);
+                    setTimeout(lockVerticalSwipes, 250);
+                    if (typeof webApp.onEvent === 'function') {
+                        try { webApp.onEvent('viewportChanged', lockVerticalSwipes); } catch (e) {}
+                    }
                 }
             } catch (e) {}
             currentRouteId = routeId;
@@ -1018,10 +1081,11 @@
             const app = document.getElementById('main-app');
             const panel = document.getElementById('stops-panel');
             app.classList.remove('map-expanded');
-            panel.style.display = 'block';
+            panel.style.removeProperty('display');
             panel.classList.remove('is-collapsed');
-            panel.style.height = '';
-            panel.style.maxHeight = '';
+            panel.style.removeProperty('height');
+            panel.style.removeProperty('max-height');
+            panel.style.removeProperty('--panel-height');
             panel.scrollTop = 0;
             setNavActive('nav-places');
             if (myMap) requestAnimationFrame(() => myMap.container.fitToViewport());
@@ -1030,7 +1094,7 @@
             const app = document.getElementById('main-app');
             const panel = document.getElementById('stops-panel');
             app.classList.add('map-expanded');
-            panel.style.display = 'none';
+            panel.style.removeProperty('display');
             setNavActive('nav-map');
             if (myMap) requestAnimationFrame(() => myMap.container.fitToViewport());
         }
