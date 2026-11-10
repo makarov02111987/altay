@@ -671,7 +671,37 @@
             #stops-panel>.stops-list{display:block!important;flex:1 1 auto!important;min-height:0!important;width:100%!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important}
             #stops-panel.is-collapsed{height:68px!important;min-height:68px!important;max-height:68px!important;overflow:hidden!important}
             #stops-panel.is-dragging{transition:none!important}
-        }</style>
+        }
+        /* Low-memory phones keep the glass colors and highlights without costly backdrop compositing. */
+        html.low-performance-device .welcome-text,
+        html.low-performance-device button,
+        html.low-performance-device #route-info,
+        html.low-performance-device #day-selector,
+        html.low-performance-device .route-card,
+        html.low-performance-device #mobile-nav,
+        html.low-performance-device #stops-panel,
+        html.low-performance-device #stops-panel .panel-head,
+        html.low-performance-device #photo-viewer,
+        html.low-performance-device .detail-close{
+            -webkit-backdrop-filter:none!important;
+            backdrop-filter:none!important;
+        }
+        html.low-performance-device .route-card,
+        html.low-performance-device #mobile-nav,
+        html.low-performance-device #day-selector,
+        html.low-performance-device #stops-panel,
+        html.low-performance-device .stop-card img,
+        html.low-performance-device .stop-placeholder{
+            box-shadow:0 5px 16px rgba(15,42,29,.14)!important;
+        }
+        html.low-performance-device #main-app #map{transition:none!important}
+        html.low-performance-device .route-card,
+        html.low-performance-device .day-btn,
+        html.low-performance-device #mobile-nav button{
+            transition-duration:.14s!important;
+        }
+        html.low-performance-device .stop-media img{transition:none!important;filter:none!important}
+        </style>
 </head>
 <body>
 
@@ -899,6 +929,16 @@
         
         routesData['7-days'].days = [...routesData['2-days'].days, ...routesData['7-days'].days];
 
+        (() => {
+            const root = document.documentElement;
+            const isCompactTouchDevice = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse) and (max-width: 900px)').matches;
+            const memoryGb = Number(navigator.deviceMemory) || 0;
+            const cpuCores = Number(navigator.hardwareConcurrency) || 0;
+            if (isCompactTouchDevice && ((memoryGb > 0 && memoryGb <= 3) || (cpuCores > 0 && cpuCores <= 4))) {
+                root.classList.add('low-performance-device');
+            }
+        })();
+
         let myMap;
         let currentRoute = null;
         let currentDayNumber = 1;
@@ -1106,6 +1146,7 @@
             panel.style.overflow = '';
             panel.innerHTML = '<div class="panel-head"><div class="panel-drag-handle" aria-hidden="true"><span></span></div><div class="panel-heading-copy"><h2>' + panelTitle + '</h2><div class="panel-meta">' + panelMeta + '</div></div><button class="panel-close" type="button" aria-label="Закрыть список мест" onclick="showMap()">×</button></div><div class="stops-list"></div>';
             const listContainer = panel.querySelector('.stops-list');
+            const cardsFragment = document.createDocumentFragment();
             const dragHandle = panel.querySelector('.panel-head');
             if (!isDesktopPanel) {
                 let dragStartY = 0;
@@ -1175,13 +1216,13 @@
                 routeLinks.className = 'stop-actions';
                 routeLinks.style.margin = '0 0 8px';
                 routeLinks.innerHTML = '<a href="https://yandex.ru/maps/?rtext=51.398380,86.000320~51.391080,86.004800&rtt=pd" target="_blank" rel="noopener">Пешком: Патмос → ГЭС ↗</a><a href="https://yandex.ru/maps/?rtext=51.261475,86.071725~51.122927,86.165701~50.960545,86.288532&rtt=auto" target="_blank" rel="noopener">На авто: Че-Чкыш → Бельтертуюк ↗</a>';
-                listContainer.appendChild(routeLinks);
+                cardsFragment.appendChild(routeLinks);
             }
             locations.forEach((loc, index) => {
                 const card = document.createElement('article');
                 card.className = 'stop-card';
                 const image = loc.photo
-                    ? `<div class="stop-media"><img src="${loc.photo}" alt="${loc.name}" loading="lazy" onerror="this.outerHTML='<div class=\\'stop-placeholder\\'>🏞️</div>'">${loc.photoPage ? `<a class="photo-credit" href="${loc.photoPage}" target="_blank" rel="noopener">Источник фото ↗</a>` : ''}</div>`
+                    ? `<div class="stop-media"><img src="${loc.photo}" alt="${loc.name}" loading="lazy" decoding="async" fetchpriority="low" onerror="this.outerHTML='<div class=\\'stop-placeholder\\'>🏞️</div>'">${loc.photoPage ? `<a class="photo-credit" href="${loc.photoPage}" target="_blank" rel="noopener">Источник фото ↗</a>` : ''}</div>`
                     : '<div class="stop-placeholder">🏞️</div>';
                 const coords = loc.coords ? `${loc.coords[0].toFixed(6)}, ${loc.coords[1].toFixed(6)}` : '';
                 const meta = [coords ? '📍 ' + coords : '', loc.time ? '⏱ ' + loc.time : ''].filter(Boolean).join(' · ');
@@ -1212,12 +1253,13 @@
                     if (marker) marker.balloon.open();
                     setNavActive('nav-map');
                 };
-                listContainer.appendChild(card);
+                cardsFragment.appendChild(card);
             });
+            listContainer.appendChild(cardsFragment);
         }
 
         function showDay(dayNum) {
-            if (myMap) markers.forEach(m => myMap.geoObjects.remove(m));
+            if (myMap && markers.length) myMap.geoObjects.removeAll();
             markers = [];
             document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
             const activeDayButton = document.getElementById(`btn-day-${dayNum}`);
@@ -1249,6 +1291,7 @@
                 stopsPanel.innerHTML = '';
             }
             if (myMap && typeof ymaps !== 'undefined') {
+            const markerCollection = new ymaps.GeoObjectCollection();
             dayData.locations.forEach((loc, index) => {
                 
                 if (!loc.coords) return;
@@ -1264,20 +1307,21 @@
                 
                 
                 
-                myMap.geoObjects.add(myPlacemark);
+                markerCollection.add(myPlacemark);
                 markers.push(myPlacemark);
                 (loc.extraCoords || []).forEach(extra => {
                     const subMarker = new ymaps.Placemark(extra.coords, {
                         balloonContentHeader: extra.label,
                         balloonContentBody: 'Дополнительная точка локации'
                     }, { preset: 'islands#orangeCircleDotIcon' });
-                    myMap.geoObjects.add(subMarker);
+                    markerCollection.add(subMarker);
                     markers.push(subMarker);
                 });
             });
 
-            if (dayData.locations.length > 0) {
-                const bounds = myMap.geoObjects.getBounds();
+            if (markers.length > 0) {
+                myMap.geoObjects.add(markerCollection);
+                const bounds = markerCollection.getBounds();
                 if (bounds) myMap.setBounds(bounds, { checkZoomRange: true, zoomMargin: 35 });
                 else if (dayData.locations[0].coords) myMap.setCenter(dayData.locations[0].coords, 11);
             }
@@ -1288,3 +1332,4 @@
     </script>
 </body>
 </html>
+
