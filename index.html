@@ -198,7 +198,7 @@
 
         function renderStopCards(locations) {
             const panel = document.getElementById('stops-panel');
-            panel.innerHTML = '<div class="panel-head"><div><h2>Красоты Чемальского тракта</h2><div class="panel-meta">8 мест · автомобильные переезды + пешие прогулки</div></div><span>🏔️</span></div>';
+            panel.innerHTML = '<div class="panel-head"><div><h2>Красоты Чемальского тракта</h2><div class="panel-meta">8 мест · автомобильные переезды + пешие прогулки</div></div><span>🏔️</span></div><div class="stop-actions" style="margin:0 0 8px"><a href="https://yandex.ru/maps/?rtext=51.398380,86.000320~51.391080,86.004800&rtt=pd" target="_blank" rel="noopener">Пешком: Патмос → ГЭС ↗</a><a href="https://yandex.ru/maps/?rtext=51.261475,86.071725~51.122927,86.165701~50.960545,86.288532&rtt=auto" target="_blank" rel="noopener">На авто: Че-Чкыш → Бельтертуюк ↗</a></div>';
             locations.forEach((loc) => {
                 const card = document.createElement('article');
                 card.className = 'stop-card';
