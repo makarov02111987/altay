@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Гайд по Алтаю - Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js?65"></script>
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=88572e75-0985-429a-b8fb-714a8ccc46da&lang=ru_RU" type="text/javascript"></script>
+    <style>
+        :root {
+            --primary-color: #ffffff;
+            --accent-color: #f0f0f0;
+            --text-dark: #1a1a1a;
+            --glass-bg: rgba(255, 255, 255, 0.2);
+            --glass-border: rgba(255, 255, 255, 0.3);
+        }
+
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; padding: 0; overflow: hidden; background: #000; 
+        }
+        
+        /* ЭКРАН ВЫБОРА */
+        #setup-screen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)), 
+                        url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1000&q=80'); 
+            background-size: cover; background-position: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            z-index: 1000; color: white; text-align: center; 
+            transition: opacity 0.5s ease; padding: 20px; box-sizing: border-box;
+        }
+        
+        #setup-screen h1 { font-size: 28px; font-weight: 800; margin-bottom: 15px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .welcome-text {
+            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border); padding: 15px 20px; border-radius: 20px;
+            font-size: 14px; line-height: 1.5; margin-bottom: 25px; max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .welcome-text a { color: #fff; text-decoration: underline; font-weight: bold; }
+        .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 320px; }
+        button { 
+            padding: 16px 20px; font-size: 15px; cursor: pointer; border: 1px solid var(--glass-border); 
+            border-radius: 16px; background: var(--glass-bg); color: white; font-weight: 600; transition: all 0.3s ease; 
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        button:hover { background: rgba(255, 255, 255, 0.4); transform: translateY(-3px); }
+
+        /* ОСНОВНОЙ ИНТЕРФЕЙС */
+        #main-app { display: none; height: 100vh; width: 100vw; position: relative; }
+        #map { width: 100%; height: 100%; }
+
+        /* АННОТАЦИЯ (Окно с описанием дня) */
+        #route-info {
+            position: absolute; top: 80px; left: 20px; right: 20px; z-index: 20;
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            border: 1px solid rgba(0,0,0,0.1); font-size: 14px; color: #333;
+            display: none; animation: slideDown 0.4s ease;
+        }
+        #route-info .close-btn {
+            position: absolute; top: 5px; right: 10px; cursor: pointer; 
+            font-size: 20px; font-weight: bold; color: #999;
+        }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        #day-selector { 
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%); 
+            z-index: 10; display: flex; gap: 8px; background: rgba(255, 255, 255, 0.7); 
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            padding: 8px; border-radius: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .day-btn { 
+            padding: 8px 16px; border: none; background: transparent; border-radius: 20px; 
+            cursor: pointer; font-size: 13px; font-weight: 600; color: #555; transition: all 0.2s;
+        }
+        .day-btn.active { background: #2c3e50; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        #stops-panel { display:none; position:absolute; z-index:15; left:12px; right:12px; bottom:16px; max-height:42vh; overflow-y:auto; padding:12px; border-radius:20px; background:rgba(255,255,255,.94); backdrop-filter:blur(14px); box-shadow:0 8px 28px rgba(0,0,0,.22); }
+        #stops-panel .panel-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:0 2px 10px; }
+        #stops-panel h2 { margin:0; font-size:16px; color:#183b35; }
+        #stops-panel .panel-meta { color:#68756f; font-size:11px; margin-top:3px; }
+        #stops-panel.is-collapsed{height:auto;max-height:76px;overflow:hidden}
+        #stops-panel.is-collapsed>:not(.panel-head){display:none!important}
+        #stops-panel.is-collapsed .panel-head{margin-bottom:0}
+        #stops-panel.is-collapsed .panel-head{margin-bottom:0}
+        @media(max-width:600px){#stops-panel.is-collapsed{max-height:72px}}
+        .stop-card { display:grid; grid-template-columns:92px 1fr; gap:11px; padding:9px 0; border-top:1px solid #e8eeea; }
+        .stop-card img,.stop-placeholder { width:92px; height:92px; object-fit:cover; border-radius:13px; background:#dce9e2; }
+        .stop-card .photo-credit { display:inline-block; margin-top:4px; font-size:9px; color:#718078; text-decoration:none; }
+        .stop-placeholder { display:flex; align-items:center; justify-content:center; color:#55756a; font-size:28px; }
+        .stop-card h3 { margin:1px 0 5px; font-size:14px; color:#193d35; }
+        .stop-card p { margin:0 0 6px; font-size:11px; line-height:1.4; color:#4c5c55; }
+        .stop-card .coords { color:#74827b; font-size:10px; margin-bottom:7px; }
+        .stop-actions { display:flex; flex-wrap:wrap; gap:6px; }
+        .stop-actions a,.stop-actions button { display:inline-block; padding:7px 9px; border:0; border-radius:9px; font-size:10px; font-weight:700; text-decoration:none; cursor:pointer; }
+        .stop-actions a { background:#e3f1e9; color:#176344; }
+        .stop-actions button { background:#193f36; color:white; }
+        @media (max-width:600px) { #stops-panel { max-height:43vh; } #route-info { top:68px; } }
+        #back-btn { 
+            position: absolute; bottom: 30px; right: 20px; z-index: 10; 
+            background: white; border-radius: 50%; width: 56px; height: 56px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; font-size: 20px; border: none;
+        }
+
+        /* Обновлённый интерфейс: главная и адаптация под телефон */
+        #setup-screen {
+            min-height:100vh; min-height:100dvh; height:auto; overflow-y:auto; justify-content:center;
+            padding:clamp(22px,5vh,56px) 20px;
+            background:
+              linear-gradient(115deg,rgba(7,24,22,.88),rgba(10,35,31,.66) 48%,rgba(5,20,19,.82)),
+              url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1800&q=88') center/cover fixed;
+        }
+        .home-content { width:min(100%,760px); margin:auto; text-align:left; }
+        .home-brand { display:flex; align-items:center; gap:9px; color:#fff; font-size:13px; letter-spacing:2px; font-weight:500; }
+        .home-brand b { color:#b9dfc7; font-weight:800; }
+        .brand-mark { display:grid; place-items:center; width:38px; height:38px; border:1px solid rgba(255,255,255,.3); border-radius:13px; background:rgba(255,255,255,.12); font-size:20px; }
+        .brand-dot { width:5px; height:5px; border-radius:50%; background:#b9dfc7; margin-left:2px; }
+        .home-brand small { margin-left:auto; font-size:9px; letter-spacing:1.4px; color:rgba(255,255,255,.62); }
+        .home-intro { max-width:620px; margin:clamp(34px,7vh,66px) 0 30px; }
+        .eyebrow { color:#b9dfc7; font-size:10px; font-weight:800; letter-spacing:2px; }
+        .home-intro h1 { margin:12px 0 12px; font-size:clamp(36px,7vw,62px); line-height:1.02; letter-spacing:-2px; color:#fff; text-shadow:none; }
+        .home-intro h1 em { color:#b9dfc7; font-style:normal; }
+        .home-intro p { max-width:540px; margin:0; color:rgba(255,255,255,.78); font-size:clamp(14px,2vw,17px); line-height:1.65; }
+        .route-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:0 0 12px; color:rgba(255,255,255,.86); font-size:10px; font-weight:800; letter-spacing:1.7px; }
+        .route-heading i { font-style:normal; color:rgba(255,255,255,.55); font-size:11px; font-weight:500; letter-spacing:0; }
+        .btn-group { max-width:none; gap:10px; }
+        .route-card { position:relative; display:flex; align-items:center; gap:14px; width:100%; min-height:88px; padding:15px 48px 15px 15px; text-align:left; color:#17372f; background:rgba(250,252,249,.96); border:1px solid rgba(255,255,255,.72); border-radius:18px; box-shadow:0 10px 28px rgba(0,0,0,.15); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); transition:transform .2s ease,background .2s ease,box-shadow .2s ease; }
+        .route-card:hover { background:#fff; transform:translateY(-2px); box-shadow:0 15px 34px rgba(0,0,0,.22); }
+        .route-icon { flex:0 0 48px; width:48px; height:48px; display:grid; place-items:center; border-radius:15px; background:#e6f0e9; font-size:23px; }
+        .route-copy { display:flex; flex:1; min-width:0; flex-direction:column; gap:5px; }
+        .route-copy strong { font-size:16px; line-height:1.2; color:#183b32; }
+        .route-copy small { font-size:12px; line-height:1.35; color:#718078; font-weight:500; }
+        .route-duration { align-self:flex-start; white-space:nowrap; padding:6px 8px; border-radius:8px; background:#edf3ee; color:#537565; font-size:9px; font-weight:800; letter-spacing:.8px; }
+        .route-arrow { position:absolute; right:17px; bottom:15px; color:#648675; font-size:17px; }
+        .home-footer { display:flex; justify-content:space-between; align-items:center; gap:14px; margin-top:22px; color:rgba(255,255,255,.56); font-size:9px; letter-spacing:1px; }
+        .home-footer a { color:rgba(255,255,255,.82); text-decoration:none; font-size:11px; letter-spacing:0; }
+        .home-footer a b { color:#c5e7d0; }
+        #main-app { height:100vh; height:var(--app-viewport-height,var(--tg-viewport-stable-height,100dvh)); width:100%; overflow:hidden; }
+        #map { touch-action:pan-x pan-y; }
+        #day-selector { max-width:calc(100% - 24px); overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none; white-space:nowrap; }
+        #day-selector::-webkit-scrollbar { display:none; }
+        .day-btn { min-height:40px; flex:0 0 auto; }
+        #stops-panel { padding:14px; padding-bottom:calc(14px + env(safe-area-inset-bottom)); overscroll-behavior:contain; }
+        .stop-card { grid-template-columns:104px minmax(0,1fr); gap:13px; }
+        .stop-card img,.stop-placeholder { width:104px; height:104px; }
+        .stop-card h3 { font-size:14px; line-height:1.35; }
+        .stop-card p { font-size:12px; line-height:1.5; }
+        .stop-actions a,.stop-actions button { min-height:36px; display:inline-flex; align-items:center; justify-content:center; padding:8px 11px; font-size:11px; }
+        #back-btn { display:flex; align-items:center; justify-content:center; min-width:48px; min-height:48px; }
+        @media (max-width:600px) {
+            #setup-screen { justify-content:flex-start; padding:22px 16px calc(22px + env(safe-area-inset-bottom)); background-attachment:scroll; }
+            .home-content { width:100%; margin:auto 0; }
+            .home-brand { font-size:12px; }
+            .home-brand small { font-size:8px; letter-spacing:.8px; }
+            .home-intro { margin:35px 0 25px; }
+            .home-intro h1 { font-size:clamp(36px,11vw,48px); letter-spacing:-1.5px; }
+            .home-intro p { font-size:14px; }
+            .route-card { min-height:82px; gap:11px; padding:13px 43px 13px 12px; border-radius:16px; }
+            .route-icon { flex-basis:42px; width:42px; height:42px; border-radius:13px; font-size:21px; }
+            .route-copy strong { font-size:14px; }
+            .route-copy small { font-size:11px; }
+            .route-duration { font-size:8px; padding:5px 6px; }
+            .home-footer { align-items:flex-start; flex-direction:column; gap:9px; margin-top:18px; }
+            #day-selector { top:10px; left:10px; right:10px; transform:none; width:auto; max-width:none; justify-content:flex-start; padding:6px; gap:5px; border-radius:16px; background:rgba(255,255,255,.94); }
+            .day-btn { min-height:42px; padding:8px 13px; font-size:12px; }
+            #route-info { top:66px; left:10px; right:10px; max-height:22vh; overflow-y:auto; padding:12px 38px 12px 13px; border-radius:14px; font-size:12px; }
+            #route-info .close-btn { top:8px; right:12px; min-width:28px; min-height:28px; display:grid; place-items:center; }
+            #stops-panel { left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom)); max-height:46dvh; padding:11px; border-radius:18px; }
+            #stops-panel h2 { font-size:14px; }
+            #stops-panel .panel-meta { font-size:10px; }
+            .stop-card { grid-template-columns:84px minmax(0,1fr); gap:10px; padding:11px 0; }
+            .stop-card img,.stop-placeholder { width:84px; height:84px; border-radius:11px; }
+            .stop-card h3 { font-size:13px; }
+            .stop-card p { font-size:11px; line-height:1.45; }
+            .stop-card .coords { font-size:9px; line-height:1.4; }
+            .stop-card .photo-credit { font-size:9px; }
+            .stop-actions { gap:5px; }
+            .stop-actions a,.stop-actions button { min-height:38px; padding:8px 9px; font-size:10px; }
+            #back-btn { right:12px; bottom:calc(48dvh + 18px + env(safe-area-inset-bottom)); width:44px; height:44px; min-width:44px; min-height:44px; font-size:17px; }
+        }
+        @media (max-width:380px) {
+            .home-brand small { display:none; }
+            .route-duration { display:none; }
+            .stop-card { grid-template-columns:72px minmax(0,1fr); }
+            .stop-card img,.stop-placeholder { width:72px; height:72px; }
+            #route-info { max-height:18vh; }
+        }
+        @media (prefers-reduced-motion:reduce) {
+            *,*::before,*::after { scroll-behavior:auto !important; transition:none !important; animation:none !important; }
+        }
+
+        /* Liquid Glass: прозрачное стекло, блики и мягкая глубина */
+        .route-card {
+            color:#fff !important;
+            background:linear-gradient(135deg,rgba(255,255,255,.25),rgba(255,255,255,.09)) !important;
+            border:1px solid rgba(255,255,255,.42) !important;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 12px 34px rgba(0,0,0,.18) !important;
+            backdrop-filter:blur(24px) saturate(165%) !important;
+            -webkit-backdrop-filter:blur(24px) saturate(165%) !important;
+        }
+        .route-card:hover,.route-card:focus-visible {
+            background:linear-gradient(135deg,rgba(255,255,255,.34),rgba(255,255,255,.15)) !important;
+            border-color:rgba(255,255,255,.62) !important;
+            transform:translateY(-2px);
+            outline:none;
+        }
+        .route-icon { color:#fff; background:rgba(255,255,255,.17) !important; border:1px solid rgba(255,255,255,.25); box-shadow:inset 0 1px 0 rgba(255,255,255,.25); }
+        .route-copy strong { color:#fff !important; text-shadow:0 1px 8px rgba(0,0,0,.18); }
+        .route-copy small { color:rgba(255,255,255,.78) !important; }
+        .route-duration { color:#fff !important; background:rgba(255,255,255,.16) !important; border:1px solid rgba(255,255,255,.25); }
+        .route-arrow { color:#fff !important; }
+        #day-selector {
+            background:rgba(255,255,255,.17) !important; border:1px solid rgba(255,255,255,.38) !important;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 10px 30px rgba(0,0,0,.16) !important;
+            backdrop-filter:blur(24px) saturate(170%) !important; -webkit-backdrop-filter:blur(24px) saturate(170%) !important;
+        }
+        .day-btn { color:#fff !important; text-shadow:0 1px 5px rgba(0,0,0,.25); }
+        .day-btn.active { color:#17382f !important; background:rgba(255,255,255,.82) !important; box-shadow:inset 0 1px 0 #fff,0 3px 12px rgba(0,0,0,.13) !important; text-shadow:none; }
+        #back-btn {
+            color:#fff !important; background:rgba(255,255,255,.2) !important; border:1px solid rgba(255,255,255,.48) !important;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 25px rgba(0,0,0,.2) !important;
+            backdrop-filter:blur(22px) saturate(170%) !important; -webkit-backdrop-filter:blur(22px) saturate(170%) !important;
+        }
+        .stop-actions a,.stop-actions button {
+            border:1px solid rgba(255,255,255,.48) !important; background:rgba(255,255,255,.24) !important; color:#173d32 !important;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 3px 10px rgba(0,0,0,.08);
+            backdrop-filter:blur(14px) saturate(150%); -webkit-backdrop-filter:blur(14px) saturate(150%);
+        }
+        @media (prefers-reduced-transparency:reduce) {
+            .route-card,#day-selector,#back-btn,.stop-actions a,.stop-actions button {
+                backdrop-filter:none !important; -webkit-backdrop-filter:none !important; background:rgba(25,55,47,.88) !important;
+            }
+        }
+
+
+        /* Мобильная навигация и обновлённые карточки остановок */
+        #mobile-nav{position:absolute;z-index:30;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:4px;width:min(340px,calc(100% - 40px));padding:5px;border:1px solid rgba(255,255,255,.48);border-radius:19px;background:linear-gradient(145deg,rgba(255,255,255,.24),rgba(18,43,36,.68));box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 10px 28px rgba(0,0,0,.26);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%)}
+        #mobile-nav button{flex:1;min-width:0;min-height:36px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.015));color:rgba(255,255,255,.88);font-family:inherit;font-size:10px;font-weight:650;line-height:1.15;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;touch-action:manipulation;transition:background .22s ease,color .22s ease,box-shadow .22s ease,border-color .22s ease}
+        #mobile-nav button .nav-icon{font-size:15px;line-height:1}
+        #mobile-nav button.active{border-color:rgba(255,255,255,.62);background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(221,239,228,.82));color:#17382f;box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 4px 16px rgba(0,0,0,.18)}
+        #mobile-nav button:active{transform:scale(.97)}
+        #stops-panel{bottom:calc(78px + env(safe-area-inset-bottom));max-height:min(48vh,440px);scroll-behavior:smooth;touch-action:pan-y;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+        #stops-panel .stops-list{touch-action:pan-y;overscroll-behavior-y:contain}
+        [class*="balloon__layout"]{box-sizing:border-box!important;width:min(320px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important}
+        [class*="balloon__content"]{box-sizing:border-box!important;max-width:100%!important;overflow-wrap:anywhere}
+        [class*="balloon__content"] img,[class*="balloon__content"] iframe{max-width:100%!important}
+        @media(max-width:600px){
+            [class*="balloon__layout"]{height:auto!important;min-height:0!important;max-height:calc(100dvh - 110px)!important;display:block!important}
+            [class*="balloon__content"]{height:auto!important;max-height:calc(100dvh - 170px)!important;overflow-y:auto!important;overflow-x:hidden!important;white-space:normal!important;overflow-wrap:break-word!important;word-break:normal!important;line-height:1.5!important;text-align:justify!important}
+            [class*="balloon__content"] p,[class*="balloon__content"] div,[class*="balloon__content"] span{max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;text-align:justify!important;line-height:1.5!important}
+            [class*="balloon__content"] a{overflow-wrap:anywhere!important}
+        }
+        #stops-panel .panel-head{position:sticky;top:-11px;z-index:2;padding:9px 2px 10px;margin:0 0 7px;background:rgba(247,250,247,.94);backdrop-filter:blur(14px)}
+        #stops-panel .panel-head{position:sticky}
+        #stops-panel .panel-drag-handle{position:absolute;top:3px;left:50%;z-index:4;transform:translateX(-50%);width:76px;height:22px;display:flex;align-items:center;justify-content:center;cursor:ns-resize;touch-action:none;user-select:none;-webkit-user-select:none}
+        #stops-panel .panel-drag-handle span{display:block;width:34px;height:4px;border-radius:99px;background:rgba(75,103,88,.35);box-shadow:0 1px 0 rgba(255,255,255,.8)}
+        #stops-panel .panel-head{padding-top:17px}
+        #stops-panel.is-collapsed .panel-head{padding-top:17px}
+        #stops-panel.is-dragging{transition:none!important;user-select:none}
+        #stops-panel .panel-close{display:none}
+        @media(max-width:600px){#stops-panel .panel-drag-handle{width:76px;height:18px}#stops-panel .panel-drag-handle span{width:38px;height:4px}}
+        .stop-card{align-items:start;padding:13px 0;border-top:1px solid rgba(31,73,59,.12)}
+        .stop-media{min-width:0}
+        .stop-card img,.stop-placeholder{cursor:zoom-in;box-shadow:0 5px 15px rgba(20,55,42,.12)}
+        .stop-card h3{font-size:14px;font-weight:800;letter-spacing:-.2px}
+        .stop-card .stop-description{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+        .stop-card.is-expanded .stop-description{display:block;overflow:visible}
+        .stop-card .stop-more{margin:0 0 7px;padding:4px 0;border:0;background:transparent;color:#39745c;font-size:11px;font-weight:800;cursor:pointer}
+        .stop-card .stop-details{min-width:0}
+        .stop-category{display:inline-flex;align-items:center;max-width:calc(100% - 34px);margin:0 0 5px;padding:4px 8px;border:1px solid rgba(65,112,83,.15);border-radius:20px;background:linear-gradient(135deg,rgba(226,240,229,.92),rgba(244,248,243,.86));color:#547663;font-size:9px;font-weight:800;letter-spacing:.45px;text-transform:uppercase}
+        .stop-card h3{margin-top:0}
+        .stop-extra{display:none;margin-top:5px}
+        .stop-card.is-expanded .stop-extra{display:block}
+        .stop-meta{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 9px}
+        .stop-meta span{display:inline-flex;align-items:center;min-height:25px;padding:5px 8px;border:1px solid rgba(57,105,77,.12);border-radius:9px;background:rgba(231,241,233,.72);color:#547262;font-size:10px;font-weight:650}
+        .stop-tip{margin:8px 0 2px;padding:10px 11px;border-left:3px solid #91b99b;border-radius:0 11px 11px 0;background:linear-gradient(110deg,rgba(229,240,231,.8),rgba(245,248,244,.72))}
+        .stop-tip strong{display:block;margin-bottom:4px;color:#315b45;font-size:10px;font-weight:850;letter-spacing:.35px}
+        .stop-tip p{margin:0;color:#5b6f63;font-size:11px;line-height:1.5}
+        .stop-media{position:relative;overflow:hidden;border-radius:13px}
+        .stop-media img{transition:transform .35s ease,filter .35s ease}
+        .stop-card.is-expanded .stop-description{-webkit-line-clamp:unset}
+        .stop-card .stop-more{display:inline-flex;align-items:center;gap:5px;padding:5px 0}
+        .stop-card .stop-more:after{content:"";width:14px;height:1px;background:#8eae98}
+        @media(max-width:600px){.stop-category{font-size:8px;padding:4px 7px}.stop-meta span{font-size:9px;min-height:23px;padding:4px 7px}.stop-tip{padding:8px 9px}}
+        .stop-card .coords{overflow-wrap:anywhere}
+        #photo-viewer{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,12,10,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+        #photo-viewer.open{display:flex}
+        #photo-viewer img{max-width:100%;max-height:84dvh;object-fit:contain;border-radius:14px;box-shadow:0 18px 60px rgba(0,0,0,.45)}
+        #photo-viewer .photo-close{position:absolute;top:calc(14px + env(safe-area-inset-top));right:16px;width:46px;height:46px;border:1px solid rgba(255,255,255,.35);border-radius:50%;color:#fff;background:rgba(255,255,255,.15);font-size:27px;cursor:pointer}
+        #resume-trip{display:none;width:100%;min-height:48px;margin-top:12px;border:1px solid rgba(255,255,255,.42);border-radius:15px;color:#fff;font-size:13px;font-weight:800;background:rgba(255,255,255,.17);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+        #back-btn{display:none!important}
+        @media(max-width:600px){#stops-panel{bottom:calc(76px + env(safe-area-inset-bottom));max-height:43dvh}#route-info{max-height:18dvh}#mobile-nav{bottom:calc(8px + env(safe-area-inset-bottom))}#mobile-nav button{min-height:46px}.stop-card{grid-template-columns:82px minmax(0,1fr);gap:10px}.stop-card img,.stop-placeholder{width:82px;height:82px}}
+        @media(max-width:380px){#stops-panel{max-height:40dvh}.stop-card{grid-template-columns:70px minmax(0,1fr)}.stop-card img,.stop-placeholder{width:70px;height:70px}}
+        @media(prefers-reduced-transparency:reduce){#mobile-nav,#photo-viewer{backdrop-filter:none;-webkit-backdrop-filter:none}#mobile-nav{background:rgba(20,43,38,.96)}}
+
+
+        /* Premium finish */
+        #mobile-nav{width:min(440px,calc(100% - 20px));gap:4px;padding:7px;border-radius:24px;background:linear-gradient(145deg,rgba(13,35,30,.82),rgba(27,61,51,.68));border-color:rgba(235,247,238,.36);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 16px 44px rgba(0,0,0,.3)}
+        #mobile-nav button{position:relative;min-height:50px;border-radius:17px;font-size:10px;letter-spacing:.1px}
+        #mobile-nav button .nav-icon{font-size:19px}
+        #mobile-nav button.active{background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(224,239,228,.88));color:#17382f;box-shadow:inset 0 1px 0 #fff,0 5px 16px rgba(0,0,0,.18)}
+        .stop-card{position:relative;border-top-color:rgba(34,76,59,.13)}
+        .stop-card h3{padding-right:34px;line-height:1.3}
+        #stops-panel{border:1px solid rgba(255,255,255,.7);box-shadow:0 16px 48px rgba(11,40,28,.2),inset 0 1px 0 rgba(255,255,255,.9);background:linear-gradient(145deg,rgba(252,254,252,.97),rgba(235,243,237,.94))}
+        #stops-panel .panel-head{border-bottom:1px solid rgba(37,78,57,.1)}
+        #stops-panel h2{letter-spacing:-.45px;font-weight:800}
+        .stop-actions a,.stop-actions button{border-radius:12px;min-height:38px;padding:9px 12px;transition:transform .18s ease,filter .18s ease}
+        .stop-actions a:active,.stop-actions button:active{transform:scale(.97);filter:brightness(.96)}
+        .route-card{position:relative;overflow:hidden;border-radius:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.48),0 18px 44px rgba(0,0,0,.22)!important}
+        .route-card:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.15),transparent 42%,rgba(255,255,255,.04))}
+        .route-icon{border-radius:17px!important}
+        .home-intro h1{letter-spacing:-2.4px}
+        .eyebrow{display:inline-flex;align-items:center;gap:8px}
+        .eyebrow:before{content:"";width:20px;height:1px;background:#b9dfc7}
+        #day-selector{border-radius:18px!important;padding:7px!important}
+        .day-btn{border-radius:13px!important;transition:background .2s ease,transform .2s ease}
+        .day-btn:active{transform:scale(.96)}
+        #route-info{border:1px solid rgba(255,255,255,.65);box-shadow:0 16px 42px rgba(13,43,31,.2),inset 0 1px 0 rgba(255,255,255,.9)}
+
+
+        /* Refined typography, alignment and attraction detail view */
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        :root{--font-ui:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+        body,button,input,textarea,select{font-family:var(--font-ui)}
+        button{font-weight:700;letter-spacing:.01em}
+        .day-btn{text-align:center}
+        #mobile-nav button{justify-content:center;text-align:center}
+        #mobile-nav button>span:last-child{display:flex;align-items:center;justify-content:center;gap:4px}
+        #mobile-nav button small{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 3px;border-radius:10px;background:rgba(255,255,255,.2);font-size:9px}
+        #mobile-nav button.active small{background:rgba(31,79,57,.1)}
+        .stop-card h3.stop-title-trigger{padding-right:36px;cursor:pointer;text-align:left;text-wrap:pretty;line-height:1.38}
+        .stop-card h3.stop-title-trigger:focus-visible{outline:2px solid #79a98b;outline-offset:3px;border-radius:5px}
+        .stop-card .stop-details{display:flex;flex-direction:column;align-items:flex-start}
+        .stop-card .stop-description{width:100%;text-align:left}
+        .stop-card .stop-more{align-self:flex-start;text-align:left}
+        .stop-card .stop-extra,.stop-card .stop-actions{width:100%}
+        .stop-actions{align-items:center}
+        .stop-actions a,.stop-actions button{font-weight:800;letter-spacing:.01em}
+        #place-detail{position:fixed;inset:0;z-index:1800;display:none;overflow-y:auto;background:linear-gradient(180deg,#f8fbf8,#edf3ee);color:#193b31;overscroll-behavior:contain;padding:0 0 calc(28px + env(safe-area-inset-bottom))}
+        #place-detail.open{display:block;animation:detailReveal .28s ease}
+        @keyframes detailReveal{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .detail-close{position:fixed;z-index:3;top:calc(14px + env(safe-area-inset-top));right:16px;width:44px;height:44px;padding:0;border:1px solid rgba(255,255,255,.62);border-radius:50%;background:rgba(19,45,37,.48);color:#fff;font-size:27px;line-height:1;box-shadow:0 5px 18px rgba(0,0,0,.18);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+        .detail-hero{position:relative;height:clamp(230px,42vh,440px);overflow:hidden;background:linear-gradient(135deg,#6e8e7a,#294d40)}
+        .detail-hero img{width:100%;height:100%;object-fit:cover}
+        .detail-hero-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.08),transparent 42%,rgba(0,0,0,.5))}
+        .detail-route{position:absolute;left:clamp(20px,5vw,56px);bottom:22px;color:#fff;font-size:11px;font-weight:750;letter-spacing:.08em;text-shadow:0 2px 10px rgba(0,0,0,.45)}
+        .detail-hero-empty{display:grid;place-items:center;color:rgba(255,255,255,.75);font-size:54px}
+        .detail-body{width:min(100% - 40px,760px);margin:0 auto;padding:26px 0 10px}
+        .detail-category{display:inline-flex;padding:6px 10px;border:1px solid rgba(66,112,83,.15);border-radius:20px;background:#e4efe6;color:#547663;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+        .detail-body h1{margin:14px 0 12px;color:#183b31;font-size:clamp(25px,5vw,38px);line-height:1.15;letter-spacing:-.045em;text-wrap:balance}
+        .detail-description{margin:0;color:#50645a;font-size:15px;line-height:1.75}
+        .detail-facts{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+        .detail-facts span{padding:9px 12px;border:1px solid rgba(54,101,72,.12);border-radius:12px;background:rgba(255,255,255,.72);color:#496a57;font-size:12px;font-weight:700}
+        .detail-tip{margin:20px 0;padding:16px 17px;border:1px solid rgba(84,133,97,.15);border-radius:16px;background:linear-gradient(130deg,#e8f1e9,#f7faf7)}
+        .detail-tip strong{display:block;margin-bottom:7px;color:#315b45;font-size:12px;font-weight:850;letter-spacing:.04em}
+        .detail-tip p{margin:0;color:#536a5b;font-size:13px;line-height:1.65}
+        .detail-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+        .detail-actions a,.detail-actions button{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 17px;border:1px solid rgba(255,255,255,.65);border-radius:14px;background:linear-gradient(135deg,#244d3d,#17392f);color:#fff;text-decoration:none;font-size:12px;font-weight:800;letter-spacing:.01em;box-shadow:0 8px 20px rgba(23,57,47,.16)}
+        .detail-actions button{background:rgba(255,255,255,.78);border-color:rgba(47,91,65,.15);color:#28523f}
+        body.detail-open{overflow:hidden}
+        @media(max-width:600px){.detail-hero{height:36vh;min-height:230px}.detail-body{width:calc(100% - 36px);padding-top:22px}.detail-description{font-size:14px}.detail-actions{flex-direction:column}.detail-actions a,.detail-actions button{width:100%;box-sizing:border-box}}
+        @media(prefers-reduced-motion:reduce){#place-detail.open{animation:none}}
+
+        /* Mobile panel: keep the drag surface available to touch pointers */
+        @media(max-width:600px){
+            #stops-panel .panel-head{
+                position:sticky;
+                top:0;
+                touch-action:none;
+                cursor:ns-resize;
+                user-select:none;
+                -webkit-user-select:none;
+                -webkit-touch-callout:none;
+                padding-top:30px!important;
+            }
+            #stops-panel .panel-drag-handle{
+                display:flex!important;
+                position:absolute;
+                top:4px;
+                left:50%;
+                z-index:8;
+                transform:translateX(-50%);
+                width:76px;
+                height:22px;
+                align-items:center;
+                justify-content:center;
+                pointer-events:none;
+            }
+            #stops-panel .panel-drag-handle span{
+                width:38px;
+                height:4px;
+                border-radius:99px;
+                background:rgba(75,103,88,.42);
+                box-shadow:0 1px 0 rgba(255,255,255,.9);
+            }
+            #stops-panel .panel-close{touch-action:manipulation}
+            #stops-panel.is-dragging{transition:none!important}
+        }
+
+        /* Desktop layout: dedicated places sidebar + spacious map workspace */
+        @media (min-width: 900px) {
+            #main-app{--desktop-sidebar:clamp(350px,30vw,440px);overflow:hidden;background:#e8eee9}
+            #main-app.map-expanded #map{inset:0!important;width:100%!important;height:100%!important;border-radius:0!important;box-shadow:none!important;transition:inset .35s ease,width .35s ease,border-radius .35s ease}
+            #main-app.map-expanded #stops-panel{display:none!important}
+            #main-app.map-expanded #day-selector{left:50%;max-width:calc(100% - 80px)}
+            #main-app.map-expanded #route-info{left:50%;right:auto;width:min(680px,calc(100% - 64px));transform:translateX(-50%)}
+            #map{transition:inset .35s ease,width .35s ease,border-radius .35s ease}
+            #map{position:absolute;inset:0 0 0 calc(var(--desktop-sidebar) + 48px);width:auto;height:100%;border-radius:24px 0 0 24px;overflow:hidden;box-shadow:-12px 0 38px rgba(18,48,35,.08)}
+            #stops-panel{top:18px;bottom:18px;left:18px;right:auto;width:var(--desktop-sidebar);max-height:none;height:auto;box-sizing:border-box;padding:0 19px 18px;border-radius:24px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(74,112,88,.28) transparent;display:flex;flex-direction:column}
+            #stops-panel .panel-head{position:sticky;top:0;z-index:5;flex:0 0 auto;gap:14px;padding:24px 2px 18px;margin:0 0 8px;background:linear-gradient(180deg,rgba(252,254,252,.99),rgba(248,251,248,.96));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+            #stops-panel .panel-heading-copy{min-width:0;flex:1}
+            #stops-panel .panel-head h2{font-size:19px;letter-spacing:-.6px}
+            #stops-panel .panel-meta{font-size:12px;margin-top:5px}
+            #stops-panel .panel-drag-handle{display:none!important}
+            #stops-panel .panel-close{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;min-height:38px;padding:0;border:1px solid rgba(72,111,87,.16);border-radius:13px;background:rgba(230,240,232,.82);color:#315c45;font:inherit;font-size:27px;font-weight:400;line-height:1;box-shadow:inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer}
+            #stops-panel .stops-list{flex:1 0 auto;min-height:100%;width:100%;box-sizing:border-box;display:flex;flex-direction:column;align-self:stretch;background:linear-gradient(180deg,rgba(250,253,250,.18),rgba(235,243,237,.34))}
+            #stops-panel .stop-card{flex:1 0 auto;min-width:0;border-bottom:1px solid rgba(34,76,59,.12)}
+            #stops-panel .stop-card:last-child{border-bottom:0}
+            #stops-panel.is-collapsed{height:auto;max-height:none}
+            #stops-panel.is-collapsed>:not(.panel-head){display:block!important}
+            .stop-card{grid-template-columns:clamp(112px,10vw,142px) minmax(0,1fr);gap:15px;padding:16px 2px;border-top-color:rgba(34,76,59,.12)}
+            .stop-card img,.stop-placeholder{width:100%;height:clamp(112px,10vw,142px);border-radius:17px}
+            .stop-card h3{font-size:15px;line-height:1.35;margin:2px 0 7px}
+            .stop-card p{font-size:12px;line-height:1.55;margin-bottom:8px}
+            .stop-card .stop-description{-webkit-line-clamp:3}
+            .stop-category{font-size:9px;padding:5px 9px;margin-bottom:7px}
+            .stop-card .stop-more{font-size:11px;margin-bottom:8px}
+            .stop-actions{gap:7px}
+            .stop-actions a,.stop-actions button{min-height:36px;padding:8px 11px;font-size:10px}
+            #day-selector{top:20px;left:calc(var(--desktop-sidebar) + 24px + (100% - var(--desktop-sidebar) - 48px)/2);right:24px;transform:translateX(-50%);width:max-content;max-width:calc(100% - var(--desktop-sidebar) - 96px);overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;justify-content:flex-start;scrollbar-width:none;border:1px solid rgba(255,255,255,.82);background:rgba(250,253,250,.78);box-shadow:0 12px 34px rgba(17,48,34,.13),inset 0 1px 0 #fff}
+            #day-selector::-webkit-scrollbar{display:none}
+            .day-btn{flex:0 0 auto;min-width:76px;padding:10px 14px;font-size:12px;color:#466052}
+            .day-btn.active{background:linear-gradient(145deg,#244d3d,#17392f);box-shadow:0 5px 14px rgba(23,57,47,.2)}
+            #route-info{top:84px;left:calc(var(--desktop-sidebar) + 68px);right:24px;max-width:680px;max-height:22vh;overflow-y:auto;padding:18px 22px;border-radius:18px;font-size:13px;line-height:1.65}
+            #mobile-nav{left:auto;right:28px;bottom:26px;transform:none;width:300px;z-index:35;padding:8px;border-radius:22px}
+            #mobile-nav button{min-height:54px;font-size:11px}
+            #mobile-nav button .nav-icon{font-size:20px}
+            #back-btn{display:none!important}
+            #place-detail .detail-hero{height:52vh;max-height:560px}
+            #place-detail .detail-body{width:min(100% - 64px,900px);padding-top:34px}
+            #place-detail .detail-description{font-size:16px;line-height:1.8}
+        }
+        @media (min-width: 900px) and (max-height: 720px){
+            #stops-panel{top:78px;bottom:18px}
+            #day-selector{top:14px}
+            .stop-card{padding:12px 2px;grid-template-columns:104px minmax(0,1fr)}
+            .stop-card img,.stop-placeholder{height:104px}
+            #mobile-nav{bottom:18px}
+        }
+
+
+        /* Android/mobile rendering: сохраняем Liquid Glass, уменьшаем стоимость blur */
+        @media (max-width: 600px) {
+            #mobile-nav {
+                -webkit-backdrop-filter: blur(11px) saturate(125%);
+                backdrop-filter: blur(11px) saturate(125%);
+                box-shadow: inset 0 1px 0 rgba(255,255,255,.24), 0 10px 28px rgba(0,0,0,.24);
+            }
+            #day-selector, .route-card, #back-btn {
+                -webkit-backdrop-filter: blur(10px) saturate(125%) !important;
+                backdrop-filter: blur(10px) saturate(125%) !important;
+            }
+            .stop-actions a, .stop-actions button,
+            #stops-panel .panel-head {
+                -webkit-backdrop-filter: blur(8px);
+                backdrop-filter: blur(8px);
+            }
+            #photo-viewer {
+                -webkit-backdrop-filter: blur(10px);
+                backdrop-filter: blur(10px);
+            }
+            .route-card, #day-selector, #back-btn {
+                box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 8px 22px rgba(0,0,0,.16) !important;
+            }
+        }
+
+        /* Final mobile navigation sizing: compact dock without changing desktop */
+        @media (max-width: 600px) {
+            #mobile-nav {
+                width: min(340px, calc(100% - 32px));
+                min-height: 0;
+                padding: 4px;
+                gap: 3px;
+                border-radius: 18px;
+            }
+            #mobile-nav button {
+                min-height: 33px;
+                padding: 3px 2px;
+                font-size: 8px;
+                gap: 2px;
+                border-radius: 12px;
+            }
+            #mobile-nav button .nav-icon { font-size: 14px; }
+            #mobile-nav button small {
+                min-width: 12px;
+                height: 12px;
+                font-size: 7px;
+            }
+        }
+
+        /* Light premium Liquid Glass navigation, matching the guide palette */
+        #mobile-nav{
+            background:linear-gradient(145deg,rgba(248,252,247,.82),rgba(222,237,225,.72))!important;
+            border:1px solid rgba(255,255,255,.78)!important;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 12px 32px rgba(28,62,45,.16)!important;
+            -webkit-backdrop-filter:blur(18px) saturate(155%)!important;
+            backdrop-filter:blur(18px) saturate(155%)!important;
+        }
+        #mobile-nav button{
+            background:linear-gradient(145deg,rgba(255,255,255,.58),rgba(231,242,232,.42))!important;
+            border:1px solid rgba(76,116,87,.16)!important;
+            color:#456653!important;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.78)!important;
+        }
+        #mobile-nav button .nav-icon{color:#527760!important}
+        #mobile-nav button.active{
+            background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(218,236,220,.92))!important;
+            border-color:rgba(80,126,91,.28)!important;
+            color:#244b35!important;
+            box-shadow:inset 0 1px 0 #fff,0 3px 10px rgba(38,77,49,.12)!important;
+        }
+        #mobile-nav button.active .nav-icon{color:#315d40!important}
+
+        
+        /* Mobile dock: same dimensions and Liquid Glass treatment as day buttons */
+        @media (max-width:600px){
+            #mobile-nav{
+                width:calc(100% - 20px)!important;
+                padding:7px!important;
+                gap:5px!important;
+                border-radius:18px!important;
+                background:rgba(255,255,255,.17)!important;
+                border:1px solid rgba(255,255,255,.38)!important;
+                box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 10px 30px rgba(0,0,0,.16)!important;
+                -webkit-backdrop-filter:blur(10px) saturate(125%)!important;
+                backdrop-filter:blur(10px) saturate(125%)!important;
+            }
+            #mobile-nav button{
+                min-height:42px!important;
+                padding:8px 10px!important;
+                border-radius:13px!important;
+                border:1px solid rgba(255,255,255,.22)!important;
+                background:rgba(255,255,255,.10)!important;
+                color:#fff!important;
+                font-size:12px!important;
+                font-weight:700!important;
+                line-height:1.1!important;
+                text-shadow:0 1px 5px rgba(0,0,0,.25)!important;
+                box-shadow:inset 0 1px 0 rgba(255,255,255,.2)!important;
+            }
+            #mobile-nav button .nav-icon{
+                color:inherit!important;
+                font-size:17px!important;
+                line-height:1!important;
+            }
+            #mobile-nav button.active{
+                background:rgba(255,255,255,.82)!important;
+                border-color:rgba(255,255,255,.72)!important;
+                color:#17382f!important;
+                text-shadow:none!important;
+                box-shadow:inset 0 1px 0 #fff,0 3px 12px rgba(0,0,0,.13)!important;
+            }
+            #mobile-nav button.active .nav-icon{color:#17382f!important}
+        }
+
+        
+        @media(max-width:600px){
+            html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+            body{-webkit-overflow-scrolling:auto}
+            #main-app{position:fixed;inset:0;width:100%;height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none}
+            #stops-panel .panel-head{touch-action:none!important;overscroll-behavior:none!important}
+        }
+        /* Mobile bottom sheet and guaranteed visible navigation */
+        @media (max-width:600px){
+            #mobile-nav{
+                position:fixed!important;
+                display:flex!important;
+                visibility:visible!important;
+                opacity:1!important;
+                pointer-events:auto!important;
+                z-index:1000!important;
+                left:10px!important;
+                right:10px!important;
+                bottom:calc(8px + env(safe-area-inset-bottom))!important;
+                transform:none!important;
+                width:auto!important;
+                box-sizing:border-box!important;
+            }
+            #mobile-nav button{color:#315b43!important}
+            #mobile-nav button .nav-icon{color:#527760!important}
+            #mobile-nav button.active{color:#244b35!important}
+            #stops-panel{
+                position:fixed!important;
+                left:0!important;
+                right:0!important;
+                bottom:0!important;
+                width:100%!important;
+                box-sizing:border-box!important;
+                height:43dvh!important;
+                max-height:82dvh!important;
+                min-height:76px!important;
+                margin:0!important;
+                padding:10px 14px calc(76px + env(safe-area-inset-bottom))!important;
+                border:1px solid rgba(255,255,255,.72)!important;
+                border-bottom:0!important;
+                border-radius:22px 22px 0 0!important;
+                box-shadow:0 -12px 38px rgba(17,52,35,.16),inset 0 1px 0 rgba(255,255,255,.9)!important;
+                background:linear-gradient(180deg,rgba(250,253,250,.98),rgba(237,245,239,.97))!important;
+                overflow-y:auto!important;
+                overscroll-behavior-y:contain!important;
+                -webkit-overflow-scrolling:touch!important;
+                touch-action:pan-y!important;
+                transition:height .22s ease,border-radius .22s ease!important;
+            }
+            #stops-panel .panel-head{
+                position:relative!important;
+                top:auto!important;
+                min-height:44px!important;
+                margin:0 0 8px!important;
+                padding:20px 2px 8px!important;
+                background:transparent!important;
+                border-bottom:1px solid rgba(37,78,57,.1)!important;
+                touch-action:none!important;
+                cursor:grab!important;
+                user-select:none!important;
+                -webkit-user-select:none!important;
+            }
+            #stops-panel .panel-drag-handle{
+                top:0!important;
+                left:50%!important;
+                width:100%!important;
+                height:28px!important;
+                transform:translateX(-50%)!important;
+                cursor:grab!important;
+                touch-action:none!important;
+            }
+            #stops-panel .panel-drag-handle span{width:42px!important;height:4px!important}
+            #stops-panel.is-collapsed{
+                height:68px!important;
+                min-height:68px!important;
+                max-height:68px!important;
+                padding:4px 14px calc(4px + env(safe-area-inset-bottom))!important;
+                overflow:hidden!important;
+                border-radius:20px 20px 0 0!important;
+            }
+            #stops-panel.is-collapsed .panel-head{min-height:28px!important;height:28px!important;margin:0!important;padding:18px 0 0!important;border:0!important;display:flex!important;align-items:flex-start!important;justify-content:center!important}
+            #stops-panel.is-collapsed .panel-heading-copy{display:none!important}
+            #stops-panel.is-collapsed .panel-drag-handle{top:0!important;height:28px!important}
+            #stops-panel.is-collapsed .panel-drag-handle span{width:46px!important;height:5px!important;background:rgba(55,91,69,.48)!important}
+            #stops-panel.is-dragging{transition:none!important}
+            #stops-panel .stops-list{touch-action:pan-y!important}
+        }
+    
+        /* Panel layout source of truth: view state controls visibility; each viewport owns its geometry. */
+        #main-app.map-expanded #stops-panel{display:none!important}
+        #main-app:not(.map-expanded) #stops-panel{display:flex}
+        @media (min-width:900px){
+            #stops-panel{display:flex!important;flex-direction:column!important;min-height:0!important;padding:0!important;overflow:hidden!important}
+            #stops-panel>.panel-head{flex:0 0 auto!important;width:100%!important;box-sizing:border-box!important;margin:0!important}
+            #stops-panel>.stops-list{display:flex!important;flex:1 1 0!important;flex-direction:column!important;align-self:stretch!important;width:100%!important;min-width:0!important;min-height:0!important;height:auto!important;margin:0!important;padding:0!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important;background:linear-gradient(180deg,#f5faf6,#eaf2ec)!important}
+            #stops-panel>.stops-list>.stop-card{display:grid!important;flex:1 0 auto!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding:16px 24px!important;border-radius:0!important;background:linear-gradient(90deg,#f2f8f3,#eaf3ec)!important;border-top:1px solid rgba(34,76,59,.12)!important;border-bottom:1px solid rgba(34,76,59,.08)!important}
+            #stops-panel>.stops-list>.stop-card:last-child{border-bottom:0!important}
+        }
+        @media (max-width:600px){
+            #main-app.map-expanded #stops-panel{display:none!important}
+            #main-app:not(.map-expanded) #stops-panel{display:flex!important}
+            #stops-panel{height:var(--panel-height,min(43dvh,440px))!important;max-height:82dvh!important;min-height:68px!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;touch-action:pan-y!important;transition:height .22s ease,border-radius .22s ease!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+            #stops-panel>.panel-head{flex:0 0 auto!important;touch-action:none!important;overscroll-behavior:none!important;cursor:ns-resize!important;user-select:none!important;-webkit-user-select:none!important}
+            #stops-panel .panel-drag-handle{display:flex!important;pointer-events:none!important;touch-action:none!important}
+            #stops-panel>.stops-list{display:block!important;flex:1 1 auto!important;min-height:0!important;width:100%!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important}
+            #stops-panel.is-collapsed{height:68px!important;min-height:68px!important;max-height:68px!important;overflow:hidden!important}
+            #stops-panel.is-dragging{transition:none!important}
+        }
+        /* Low-memory phones keep the glass colors and highlights without costly backdrop compositing. */
+        html.low-performance-device .welcome-text,
+        html.low-performance-device button,
+        html.low-performance-device #route-info,
+        html.low-performance-device #day-selector,
+        html.low-performance-device .route-card,
+        html.low-performance-device #mobile-nav,
+        html.low-performance-device #stops-panel,
+        html.low-performance-device #stops-panel .panel-head,
+        html.low-performance-device #photo-viewer,
+        html.low-performance-device .detail-close{
+            -webkit-backdrop-filter:none!important;
+            backdrop-filter:none!important;
+        }
+        html.low-performance-device .route-card,
+        html.low-performance-device #mobile-nav,
+        html.low-performance-device #day-selector,
+        html.low-performance-device #stops-panel,
+        html.low-performance-device .stop-card img,
+        html.low-performance-device .stop-placeholder{
+            box-shadow:0 5px 16px rgba(15,42,29,.14)!important;
+        }
+        html.low-performance-device #main-app #map{transition:none!important}
+        html.low-performance-device .route-card,
+        html.low-performance-device .day-btn,
+        html.low-performance-device #mobile-nav button{
+            transition-duration:.14s!important;
+        }
+        html.low-performance-device .stop-media img{transition:none!important;filter:none!important}
+        </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <div class="home-content">
+            <div class="home-brand"><span class="brand-mark">🏔</span><span>АЛТАЙ <b>ГАЙД</b></span><span class="brand-dot"></span><small>ПУТЕШЕСТВУЙ СВОИМ МАРШРУТОМ</small></div>
+            <div class="home-intro">
+                <span class="eyebrow">ТВОЁ ПУТЕШЕСТВИЕ НАЧИНАЕТСЯ ЗДЕСЬ</span>
+                <h1>Открой свой <em>Алтай</em></h1>
+                <p>Готовые маршруты, красивые места и удобная карта путешествия. Выбирай продолжительность и отправляйся исследовать горы.</p>
+            </div>
+            <div class="route-heading"><span>ВЫБЕРИ СВОЙ МАРШРУТ</span><i>3 путешествия</i></div>
+            <div class="btn-group">
+                <button class="route-card route-card-short" onclick="startApp('2-days')">
+                    <span class="route-icon">🌿</span><span class="route-copy"><strong>Чемальская история</strong><small>Короткое знакомство с сердцем Алтая</small></span><span class="route-duration">2 ДНЯ</span><span class="route-arrow">↗</span>
+                </button>
+                <button class="route-card route-card-medium" onclick="startApp('7-days')">
+                    <span class="route-icon">🏞️</span><span class="route-copy"><strong>Чуйский тракт</strong><small>Большое путешествие по главным местам</small></span><span class="route-duration">7 ДНЕЙ</span><span class="route-arrow">↗</span>
+                </button>
+                <button class="route-card route-card-long" onclick="startApp('14-days')">
+                    <span class="route-icon">⛰️</span><span class="route-copy"><strong>Золотое кольцо Алтая</strong><small>Путешествие от Чемала до Телецкого озера</small></span><span class="route-duration">11 ДНЕЙ</span><span class="route-arrow">↗</span>
+                </button>
+            </div>
+            <button id="resume-trip" type="button" onclick="resumeLastTrip()">↗ Продолжить последнее путешествие</button>
+            <div class="home-footer"><span>✦ МАРШРУТЫ И КАРТА В ОДНОМ МЕСТЕ</span><a href="https://t.me/makarovml" target="_blank" rel="noopener">Нужен индивидуальный тур? <b>Напиши куратору ↗</b></a></div>
+        </div>
+    </div>
+
+    <div id="main-app">
+        <div id="day-selector"></div>
+        <div id="route-info">
+            <span class="close-btn" onclick="closeInfo()">&times;</span>
+            <div id="info-content"></div>
+        </div>
+        <div id="map"></div>
+        <section id="stops-panel"></section>
+        <button id="back-btn" onclick="location.reload()">⬅️</button>
+        <nav id="mobile-nav" aria-label="Навигация по приложению">
+            <button id="nav-places" class="active" type="button" onclick="showPlaces()"><span class="nav-icon">☷</span><span>Места</span></button>
+            <button id="nav-map" type="button" onclick="showMap()"><span class="nav-icon">⌖</span><span>Карта</span></button>
+            <button id="nav-menu" type="button" onclick="goHome()"><span class="nav-icon">⌂</span><span>В меню</span></button>
+        </nav>
+    </div>
+    <section id="place-detail" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Информация о достопримечательности">
+        <button class="detail-close" type="button" onclick="closePlaceDetail()" aria-label="Закрыть">×</button>
+        <div id="place-detail-content"></div>
+    </section>
+    <div id="photo-viewer" onclick="closePhotoViewer(event)" aria-label="Просмотр фотографии">
+        <button class="photo-close" type="button" aria-label="Закрыть" onclick="closePhotoViewer(event)">×</button>
+        <img id="photo-viewer-image" alt="Фотография достопримечательности">
+    </div>
+
+    <script>
+        const routesData = {
+            '2-days': {
+                info: {
+                    1: "Начинаем знакомство с Алтаем с самых ярких мест Чемальского тракта. Маршрут рассчитан на два дня: стартуйте из Горно-Алтайска утром, около 9:00, чтобы без спешки посетить основные достопримечательности, сделать остановки для фотографий и к вечеру приехать в Чемал. Время в пути и расходы зависят от сезона, состава группы и выбранного жилья.",
+                    2: "Второй день посвящён Чемальскому району. Вас ждут остров Патмос, прогулка по Козьей тропе, Чемальская ГЭС, ущелье Че-Чкыш, Ороктойский мост и водопад Бельтертуюк. День сочетает красивые виды, короткие пешие маршруты и поездки по горным дорогам. На дальние остановки оставьте достаточно времени."
+                },
+                days: [
+                    { day: 1, locations: [
+                        { name: "1. Курорт Манжерок", coords: [51.817372, 85.810023], desc: "Всесезонный курорт у озера Манжерок и подножия Малой Синюхи. Можно подняться по канатной дороге на смотровые площадки, погулять по территории и заглянуть в парк развлечений. Отличная первая остановка, чтобы увидеть Алтай с высоты.", time: "1,5–2,5 часа", tips: "Работа канатных дорог зависит от погоды. Перед поездкой проверьте расписание и доступность подъёмников.", photo: "https://xn--80akcrghjp.xn--p1ai/uploads/images/page/dFtEUaFYzrY5tciI0nW4wB0vP9eitPE22bNBm2Xq.jpg", photoPage: "https://xn--80akcrghjp.xn--p1ai/walking-tickets" },
+                        { name: "2. Талдинские пещеры", coords: [51.778761, 85.730661], desc: "Большой пещерный комплекс на берегу Катуни. Здесь можно пройти по оборудованным тропам, заглянуть в гроты и познакомиться с необычным рельефом скал. Напротив находятся парк Рериха, грот Ихтиандра и набережная у парк-отеля «Алтика».", time: "1–1,5 часа", tips: "Возьмите удобную обувь: на тропах есть лестницы и неровные участки. Экскурсионные программы и стоимость уточняйте на месте.", photo: "https://static.tildacdn.com/tild6661-6533-4365-b262-313931356536/4d64ae70c902175929ac.jpeg", photoPage: "https://ivengoaltay.ru/ekskursii-po-gornomu-altayu" },
+                        { name: "3. Знаменитая чайная", coords: [51.641651, 85.762543], desc: "Время обедать! Легендарная чайная в Усть-Семе связана со съёмками фильма Василия Макаровича Шукшина «Живёт такой парень». Здание восстановили, а сама остановка стала отличным поводом передохнуть, поесть и прикоснуться к истории Чуйского тракта.", time: "45–60 минут", tips: "Уточните режим работы и наличие свободных мест перед поездкой.", photo: "https://altayrealt.ru/picture/14352/710x436.jpg", photoPage: "https://altayrealt.ru/arhitektura/71148" },
+                        { name: "4. Сад пионов", coords: [51.495454, 85.997679], desc: "Интересная локация с удивительным садом, антуражным декором и собственным рестораном. Здесь можно неспешно прогуляться по территории, рассмотреть оформление сада и сделать остановку на отдых или обед.", time: "40–60 минут", tips: "Совсем рядом находится музей под открытым небом «Форт Куюм». Если располагаете временем, можно заехать и посетить его. <a href=\"https://yandex.ru/maps/?text=Форт%20Куюм%20Республика%20Алтай\" target=\"_blank\" rel=\"noopener\">Найти Форт Куюм на карте ↗</a>", photo: "https://uploads2.stells.info/fJwBLHJTbABjULrGvYfAGvgPMto%3D/952x600/jpg/2/d6/2d6bd8d6d219bca275232cc6b8414ed5.jpg", photoPage: "https://www.alean.ru/hotels/rossiya/respublika_altay/chemalskiy_rayon/elekmonar/sad_pionov_eko_park/" },
+                        { name: "5. База отдыха в селе Чемал", coords: [51.433449, 85.980230], desc: "Финальная точка первого дня маршрута. Приезжаем на базу отдыха в селе Чемал, заселяемся и проводим вечер в горах. Завтра отсюда стартуем по следующему маршруту.", time: "Заселение и отдых", tips: "Заранее выберите место проживания, уточните условия заселения и подтвердите бронь.", photo: "https://mirturbaz.ru/uploads/picture/pic/2122592/big_123.jpg", photoPage: "https://mirturbaz.ru/russia/respublika-altay/chemal/f/best" }
+                    ]},
+                    { day: 2, locations: [
+                        { name: "1. Остров Патмос", coords: [51.398380, 86.000320], desc: "Скалистый остров посреди Катуни с храмом Иоанна Богослова, подвесным мостом и образом Богородицы, высеченным в скале.", time: "30–40 минут", tips: "На мосту возможны очереди. Уважайте правила посещения храма.", photo: "https://commons.wikimedia.org/wiki/Special:FilePath/Остров_Патмос.JPG?width=1000", photoPage: "https://commons.wikimedia.org/wiki/File:Остров_Патмос.JPG" },
+                        { name: "2. Козья тропа", coords: [51.396814, 86.002730], endCoords: [51.391918, 86.003948], desc: "Пешеходная тропа по склону Бешпека над Катунью, соединяющая район Патмоса с Чемальской ГЭС.", time: "30–50 минут", tips: "Есть участки над обрывом. Нужна удобная обувь; не подходите к краю.", photo: "https://commons.wikimedia.org/wiki/Special:FilePath/Козья_тропа.jpg?width=1000", photoPage: "https://commons.wikimedia.org/wiki/File:Козья_тропа.jpg" },
+                        { name: "3. Чемальская ГЭС", coords: [51.391080, 86.004800], desc: "Историческая гидроэлектростанция, построенная в 1935 году на реке Чемал. Рядом находится место слияния Чемала и Катуни.", time: "20–30 минут", tips: "Осмотрите плотину и панорамы скальных берегов. Доступ на отдельные участки может быть ограничен.", photo: "https://commons.wikimedia.org/wiki/Special:FilePath/Чемальская_ГЭС.jpg?width=1000", photoPage: "https://commons.wikimedia.org/wiki/File:Чемальская_ГЭС.jpg" },
+                        { name: "4. Туристический рынок у Чемальской ГЭС", coords: null, mapQuery: "Туристический рынок у Чемальской ГЭС Республика Алтай", desc: "Торговые ряды с алтайским мёдом, травяными сборами, сувенирами, изделиями ручной работы и местными сладостями.", time: "20–40 минут", tips: "Перед посещением найдите актуальное расположение торговых рядов на карте.", photo: "https://turistka.ru/im/14/2025_chemal_12.jpg" },
+                        { name: "5. Урочище Че-Чкыш", coords: [51.261475, 86.071725], extraCoords: [{ label: "Водопад", coords: [51.264583, 86.074855] }, { label: "Смотровая площадка", coords: [51.263650, 86.070392] }], desc: "Узкое ущелье с отвесными скалами, небольшим водопадом, петроглифами и смотровой площадкой над долиной Катуни.", time: "1–1,5 часа", tips: "Подъём к смотровой площадке местами крутой. Возможна плата за посещение.", photo: "https://commons.wikimedia.org/wiki/Special:FilePath/Чечкыш.jpg?width=1000", photoPage: "https://commons.wikimedia.org/wiki/Category:Protected_areas_of_Russia/0410057" },
+                        { name: "6. Ороктойский мост", coords: [51.122927, 86.165701], desc: "Мост через Катунь возле села Ороктой. Здесь река проходит через узкое скалистое ущелье с Тельдекпенскими порогами.", time: "30–45 минут", tips: "Учитывайте время на дорогу и состояние грунтовых участков. Не подходите близко к бурным потокам.", photo: "https://www.vtourisme.com/images/stories/my10/image082.jpg" },
+                        { name: "7. Водопад Бельтертуюк", coords: [50.960545, 86.288532], desc: "Каскадный водопад за селом Куюс. Вода проходит несколькими ступенями среди скал; часть водопада видна с моста.", time: "40–60 минут", tips: "Последний участок дороги может быть сложным для легковых автомобилей. Проверьте состояние дороги перед выездом.", photo: "https://commons.wikimedia.org/wiki/Special:FilePath/Водопадик_на_Бельтертуюке.jpg?width=1000", photoPage: "https://commons.wikimedia.org/wiki/File:Водопадик_на_Бельтертуюке.jpg" },
+                        { name: "8. Форелевое хозяйство «Тук-Зажа»", coords: [51.346312, 86.109858], desc: "Форелевое хозяйство возле села Уожан с водоёмами, наполненными горной водой. Возможность посмотреть на форель и, если доступно, приобрести рыбу.", time: "30–60 минут", tips: "Перед посещением уточните режим работы и возможность экскурсии.", photo: "https://avatars.mds.yandex.net/get-altay/4285172/2a00000179f9c64540ef96b587077ecd5f52/XXXL" }
+                    ]}
+                ]
+            },
+            '7-days': {
+                info: {
+                    1: "День 1. Повторяем первый день тура «Чемальская история»: Манжерок, Талдинские пещеры, знаменитая чайная, Сад пионов и заселение на базе в Чемале.",
+                    2: "Продолжаем знакомство с Чемальским районом: посещаем остров Патмос, проходим по Козьей тропе, осматриваем Чемальскую ГЭС, ущелье Че-Чкыш и Ороктойский мост. Если позволит время и состояние дороги, заезжаем к водопаду Бельтертуюк.",
+                    3: "Переезжаем из Чемала в Онгудай. По пути заглянем в ботанический сад в Камлаке, познакомимся с хаски и северными оленями в питомнике, поднимемся на Семинский перевал и остановимся у смотровой площадки в районе Каракола. Вечером заселяемся в Онгудае.",
+                    4: "Сегодня едем по одному из самых живописных участков Чуйского тракта. По дороге увидим перевал Чике-Таман, песчаные бомы, Катунские террасы, древние каменные изваяния, слияние Чуи и Катуни, петроглифы Калбак-Таш и водопад Ширлак. Ночуем в районе Акташа.",
+                    5: "Радиальная поездка из Акташа на Улаганское плато. По пути остановимся у Красных ворот и высокогорных озёр, пересечём Улаганский перевал, посетим Пазырыкские курганы и доберёмся до смотровой площадки перевала Кату-Ярык. После прогулки возвращаемся на базу в Акташ. Спуск в долину Чулышмана на обычном автомобиле в этот день не планируется.",
+                    6: "День высокогорных пейзажей и необычных ландшафтов. Посетим Гейзеровое озеро, увидим панорамы Курайской степи и Северо-Чуйского хребта, проедем по Чуйскому хайвею, заглянем на разноцветные склоны урочища Кызыл-Чин у Чаган-Узуна, а затем отправимся через Кош-Агач к Тархатинскому мегалитическому комплексу. Вечером возвращаемся в Акташ.",
+                    7: "Завершающий день путешествия. Из Акташа отправляемся в сторону Горно-Алтайска и аэропорта. Дорога занимает значительную часть дня, поэтому заранее проверьте время вылета, дорожную обстановку и оставьте запас на остановки."
+                },
+                days: [
+                    { day: 3, locations: [
+                        { name: "1. Горно-Алтайский ботанический сад в селе Камлак", coords: [51.6225, 85.704444], desc: "Ботанический сад расположен на большой естественной поляне в урочище Чистый Луг, среди гор и реликтового леса. Здесь собраны более 1 800 видов и сортов растений из разных природных зон Алтая, России и других регионов мира. Прогулка проходит по ухоженным дорожкам и тематическим экспозициям: можно рассмотреть редкие и эндемичные растения, альпийские горки, заглянуть к небольшому пруду, а затем пройти к экотропе вдоль реки Семы и смотровым площадкам. Это не просто цветник, а тихий природный уголок, где приятно сделать паузу после дороги.", time: "45–75 минут", tips: "Официальный адрес: Шебалинский район, село Камлак, урочище Чистый Луг. В весенне-летний сезон сад принимает посетителей ежедневно; расписание, стоимость и доступность экскурсий лучше проверить на официальном сайте перед выездом.", photo: "https://altai.travel/backend/storage/media/1962/01JWVC22B9H7EYE0SCBVC0ENAZ.jpg", photoPage: "https://altai.travel/tourism/places/botanicheskiy-sad" },
+                        { name: "2. Питомник хаски и северных оленей «Сибирская легенда»", coords: [51.635146, 85.693207], desc: "Остановка для знакомства с северными оленями и собаками породы сибирский хаски. В питомнике можно узнать об особенностях содержания животных, их повадках и работе ездовых собак, понаблюдать за ними и сделать фотографии. Формат посещения зависит от сезона и действующих программ: иногда доступны экскурсии и личное знакомство с животными, но набор активностей лучше уточнить заранее.", time: "45–60 минут", tips: "Питомник переезжал, поэтому перед выездом обязательно уточните актуальную точку, расписание, стоимость и необходимость предварительной записи.", photo: "https://avatars.mds.yandex.net/get-altay/16113897/2a00000198a2200638999b9c853efe663314/XXXL" },
+                        { name: "3. Семинский перевал", coords: [51.03843, 85.59244], desc: "Семинский перевал пересекает Семинский хребет и служит природной границей между Северным и Центральным Алтаем. Дорога поднимается через несколько высотных природных поясов: лиственные и сосновые леса постепенно сменяются кедровой тайгой, а выше встречаются субальпийские луга и низкорослая горная растительность. На вершине перевала находятся памятный обелиск, торговые ряды и места для короткой прогулки. Здесь хорошо почувствовать перемену климата и ландшафта: даже в тёплый день наверху часто прохладнее и ветренее, чем в долинах.", time: "30–45 минут", tips: "На перевале высота седловины около 1 717 м; не путайте её с высотой окружающих вершин. Даже летом может быть заметно холоднее, чем в долине. Возьмите ветровку и не задерживайтесь на проезжей части.", photo: "https://static.tildacdn.com/tild3034-3134-4264-b833-373863323761/__.jpg", photoPage: "https://altaicars.ru/sight4" },
+                        { name: "4. Смотровая площадка у села Каракол", coords: [50.802954, 85.922427], desc: "Остановка ради панорамы долины и окружающих гор в районе Каракола. Хорошее место перевести дух и посмотреть на смену ландшафтов по мере движения на юго-восток.", time: "15–25 минут", tips: "У смотровых в этом районе несколько возможных съездов. Выбирайте безопасную площадку, не останавливайтесь на узкой обочине.", photo: "https://avatars.mds.yandex.net/get-altay/9709178/2a00000189d2ebdbe1758013d56c39a23781/XXXL" },
+                        { name: "5. База отдыха в селе Онгудай", coords: [50.739983, 86.153330], desc: "Финиш третьего дня. Заселяемся, отдыхаем после дороги и готовимся к насыщенному дню по Чуйскому тракту.", time: "Заселение и отдых", tips: "Заранее подтвердите бронь, наличие парковки и возможность раннего выезда." }
+                    ]},
+                    { day: 4, locations: [
+                        { name: "1. Дача Газпром у поворота на Степушку", coords: [50.774538, 86.465633], desc: "Короткая остановка у местного объекта возле поворота на Степушку. Осмотрите его с дороги и не заходите на закрытую территорию.", time: "10–15 минут", tips: "Соблюдайте границы частной территории и дорожные ограничения. Не пытайтесь подъезжать к закрытым или охраняемым участкам.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRYSaxQdL0q0HGiUqpGqq3blMd_b5QaAdT0J0MdzzuHOaT3111j9HV-bpSj&s=10" },
+                        { name: "2. Перевал Чике-Таман", coords: [50.645, 86.312222], desc: "Живописный перевал высотой около 1295 метров на Чуйском тракте. Серпантин поднимается на Теректинский хребет, а наверху оборудована смотровая площадка. Можно увидеть изгибы современной дороги и следы старого тракта, который проходил здесь раньше.", time: "30–45 минут", tips: "Оставьте автомобиль на парковке и поднимитесь на смотровую пешком. На площадке и у торговых рядов бывает многолюдно.", photo: "https://probiysk.ru/images/wp-content/uploads/2021/05/chike-taman-8.jpg" },
+                        { name: "3. Купчегень: цветение маральника (опционально)", coords: null, mapQuery: "Цветение маральника Купчегень Республика Алтай", desc: "Весенняя дополнительная остановка ради цветущего маральника на склонах. В сезон горы покрываются розово-лиловыми пятнами, но сроки цветения зависят от высоты, погоды и конкретного года.", time: "20–40 минут", tips: "Включайте эту точку только в период цветения и при безопасном съезде с трассы. Не вытаптывайте кустарники и не ломайте ветви.", photo: "https://ganemantravel.ru/upload/iblock/13a/facv1yup9rd757i67n94yeyyseivvtrr.jpg" },
+                        { name: "4. Песчаная стена у Малого Яломана", coords: [50.560124, 86.563487], desc: "Песчаная стена у Малого Яломана представляет собой обнажение слоистых осадочных пород, которые за долгие геологические эпохи были подняты, размыты и обработаны ветром и водой. Цвета и полосы хорошо читаются на открытом склоне и особенно выразительны при боковом солнечном свете. Это короткая остановка ради необычной фактуры скал и панорамы долины Катуни, а не оборудованный парк с ограждениями и инфраструктурой.", time: "15–25 минут", tips: "Не забирайтесь на осыпающиеся участки, не стойте под нависающими фрагментами скалы и не оставляйте автомобиль на узкой обочине.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFbOWEsl6QeHu_IDDSEOcKHmK6HcwYRpKTzl3gFGfCyg&s=10" },
+                        { name: "5. Смотровая на Катунские террасы", coords: [50.520389, 86.566655], desc: "Катунские террасы хорошо заметны как широкие ступени на склонах долины. Это следы древней работы реки: со временем Катунь меняла уровень и русло, оставляя над современной поймой участки прежних речных равнин. С видовой точки можно рассмотреть рельеф долины, изгибы реки и противоположные склоны. Особенно выразительно место выглядит при низком боковом солнце, когда перепады высот и контуры террас становятся заметнее.", time: "15–25 минут", tips: "В районе несколько съездов и обзорных точек. Уточните нужную площадку по карте и выбирайте безопасное место для остановки; не подходите к неограждённым краям.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHg4mUQg-c_0pyW6Dmt4hp8PZ9jAlZEKurMT2OS2Ekwg&s=10" },
+                        { name: "6. Три каменных воина", coords: [50.434123, 86.622569], desc: "У дороги возле Ини находятся древние каменные изваяния, которые в туристических описаниях называют тремя каменными воинами. Такие памятники связывают с древними погребальными и поминальными традициями Центральной Азии. Их точное назначение и датировка требуют аккуратного исторического комментария, поэтому лучше воспринимать их как часть большого археологического наследия Чуйского тракта, а не как достоверно установленное изображение конкретных воинов.", time: "15–25 минут", tips: "Это археологический объект: не трогайте и не перемещайте камни, не пытайтесь очищать или обводить изображения мелом, не оставляйте мусор.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS10pVqDGi_yScJkbynuXdOSnAEsqt32B85gT-jKeD0mx9GbrprxDsGkLA&s=10" },
+                        { name: "7. Слияние Чуи и Катуни", coords: [50.39479, 86.675081], desc: "В этом месте Чуя впадает в Катунь, и две реки заметно различаются по цвету и характеру воды. Катунь часто выглядит бирюзовой или зеленовато-голубой, а Чуя после дождей и таяния снега приносит больше взвешенных частиц и может казаться серо-молочной. Контраст особенно хорошо виден с обзорной точки выше слияния, хотя выраженность границы зависит от сезона, осадков и уровня воды. Это одна из самых фотогеничных остановок Чуйского тракта.", time: "20–30 минут", tips: "До обзорной точки нужно пройти пешком. Не спускайтесь к воде по крутым неустойчивым склонам и не подходите к краю обрыва.", photo: "https://ic.pics.livejournal.com/galyagorshenina/52268261/883017/883017_original.jpg" },
+                        { name: "8. Петроглифы Калбак-Таш", coords: null, mapQuery: "Петроглифы Калбак-Таш Республика Алтай", desc: "Калбак-Таш - один из наиболее известных комплексов наскального искусства Алтая. На скальных плоскостях сохранились изображения животных, людей, сцен охоты, колесниц и знаков, созданные в разные исторические эпохи - от древнейших периодов до раннего Средневековья. Здесь есть и древнетюркские рунические надписи. Многие рисунки не сразу заметны: часть линий выветрена, поэтому экскурсовод помогает находить изображения и объясняет, как менялись сюжеты и техника их нанесения. Это настоящий музей под открытым небом, где важно соблюдать охранный режим.", time: "40–60 минут", tips: "Лучше посещать с экскурсоводом: он поможет увидеть рисунки и объяснит их значение. Не трогайте и не обводите изображения, не наносите на камни мел или краску. Уточните режим работы и стоимость перед поездкой.", photo: "https://3darchaeology.ru/upload/iblock/94c/culudds1325z5aih4oh0jxesj3vupe0n.JPG", photoPage: "https://3darchaeology.ru/proekty/catalog-3d-tours/petroglify-urochishcha-kalbak-tash" },
+                        { name: "9. Урочище Адыр-Кая", coords: [50.409006, 86.8761], desc: "Живописная скальная местность на Чуйском тракте с панорамами долины и характерными каменными выходами. Остановка для короткой прогулки и фотографий.", time: "15–25 минут", tips: "Перед выездом откройте точку в навигаторе и проверьте подъезд. В этом районе встречаются похожие названия и несколько обзорных мест.", photo: "https://www.welcometoaltai.ru/attractions/kezer-tash/photo/1.jpg" },
+                        { name: "10. Смотровая площадка у Ак-Бома", coords: [50.352860, 87.055467], desc: "Видовая остановка в районе Белого Бома, где Чуйский тракт проходит среди скальных склонов и долины Чуи.", time: "10–20 минут", tips: "Останавливайтесь только на оборудованных карманах и площадках, не на узкой обочине.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCl-GUMGDuRhhxC5KzodTkKVOnH_wbxEnbubEPEgq-Ja7AzWo69We6HFKx&s=10" },
+                        { name: "11. Водопад Ширлак («Девичьи слёзы»)", coords: [50.345554, 87.219053], desc: "Небольшой водопад на притоке Чуи, известный под названием «Девичьи слёзы». К нему ведёт короткая пешая тропа от Чуйского тракта; особенно красиво место после дождей и в период активного таяния.", time: "20–35 минут", tips: "Тропа может быть скользкой. Не подходите к краю водопада и берегите обувь от мокрых камней.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCl-GUMGDuRhhxC5KzodTkKVOnH_wbxEnbubEPEgq-Ja7AzWo69We6HFKx&s=10" },
+                        { name: "12. База отдыха в районе Акташа", coords: null, mapQuery: "Базы отдыха Акташ Республика Алтай", desc: "Заселение после насыщенного дня на Чуйском тракте. Акташ станет отправной точкой для двух следующих радиальных маршрутов.", time: "Заселение и отдых", tips: "Заранее выберите базу отдыха в Акташе, уточните условия заселения и наличие парковки. Удобно выехать утром без спешки." }
+                    ]},
+                    { day: 5, locations: [
+                        { name: "1. Красные ворота", coords: [50.364444, 87.633333], desc: "Красные ворота - эффектный узкий проход, где дорога на Улаган буквально прорезает массив красноватых скал. Окраску пород связывают с присутствием соединений железа и других минералов. Скальные стены поднимаются по обе стороны дороги, поэтому даже короткая остановка даёт ощущение настоящего горного коридора. Это природный памятник и одновременно действующий участок трассы, поэтому здесь особенно важно думать о безопасности.", time: "10–15 минут", tips: "Не выходите на проезжую часть ради фотографии и не останавливайтесь в местах, где автомобиль мешает движению. Фото делайте только с безопасной площадки.", photo: "https://club-voshod.com/files/materials/630/group_cf/krasnye_vorota_pamyatnik_prirody_altaya_3_6.jpg", photoPage: "https://club-voshod.com/info/pohodnoe_info/dostoprimechatelnosti/altai/krasnye_vorota_na_altae/" },
+                        { name: "2. Мёртвое озеро", coords: [50.402618, 87.602449], desc: "Небольшое озеро в окрестностях Акташа и Улагана, известное местными легендами и необычным видом. ", time: "15–25 минут", tips: "Не заходите в воду и не пробуйте её. Уточните точку подъезда: под этим названием могут иметься в виду разные водоёмы.", photo: "https://goldaltai.ru/wp-content/uploads/2021/05/mertvoe_ozero-3.jpg.webp" },
+                        { name: "3. Застава Валентина Михайловича", coords: null, mapQuery: "Застава Валентина Михайловича Улаганский район Республика Алтай", desc: "Остановка у памятного места на дороге в сторону Улаганского плато. ", time: "10–20 минут", tips: "Уточните расположение памятного места у местных жителей перед поездкой.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYrPQgKj9onHYDEhbsIUKi8qhmxaJZXoqvIMusCKaw9MaYeMKBgjmfrzc&s=10" },
+                        { name: "4. Озеро Киделю", coords: [50.499238, 87.650431], desc: "Небольшое высокогорное озеро у дороги Акташ — Улаган, в районе Улаганского перевала. В ясную погоду в воде отражаются склоны и небо.", time: "15–25 минут", tips: "Высота здесь около двух километров над уровнем моря. Погода меняется быстро, держите тёплую одежду под рукой.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS5FB6O4IUpIElkpdmyABEjOZrKL-k8WORJ2fNli6w0R8WjWXjzHELnkO8&s=10" },
+                        { name: "5. Улаганский перевал", coords: [50.4996, 87.65549], desc: "Высокогорный перевал на дороге между Акташем и Улаганом. Здесь открываются виды на горные склоны и хвойные леса; это одна из самых заметных высотных точек маршрута.", time: "15–25 минут", tips: "Учитывайте высоту и возможный ветер. На спуске соблюдайте скоростной режим.", photo: "https://altai-tour.ru/upload/medialibrary/37e/37e04b3644a7b3454af5768a1750c71a.jpg" },
+                        { name: "6. Пазырыкские курганы", coords: [50.746828, 88.071946], desc: "Пять крупных древних курганов в урочище Пазырык, рядом с селом Балыктуюль. Памятник связан с пазырыкской культурой раннего железного века; археологические находки из этих курганов известны далеко за пределами Алтая.", time: "30–45 минут", tips: "Не поднимайтесь на насыпи и не нарушайте охранную зону памятника. Дорога после Улагана местами грунтовая.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSeGWv6a_Cr2Vab4adigcscsi90adWB6sce0tQf4Z7PLRGWkbRsn8IPjM3q&s=10" },
+                        { name: "7. Перевал Кату-Ярык и панорама долины Чулышмана", coords: [50.911610, 88.217680], desc: "Кату-Ярык - знаменитый крутой спуск с Улаганского плато в долину реки Чулышман. Со смотровой площадки открывается масштабная панорама: далеко внизу видна долина с извилистым руслом реки, зелёными участками поймы и отвесными склонами. Серпантин прорезает склон множеством крутых поворотов и позволяет оценить перепад высот более чем в 800 метров. Автомобильную дорогу открыли в 1989 году; до её появления местные жители пользовались конными тропами и водным путём через Телецкое озеро. При ясной погоде можно разглядеть отдельные водопады на противоположных склонах, но видимость зависит от сезона и облачности.", time: "1–1,5 часа", photo: "https://turistass.com/image/Articles75/c1250cf6ec-1.jpg", photoPage: "https://turistass.com/article/dolina-reki-chulyshman-i-pereval-katu-yaryk-zhivopisnyj-ugolok-gornogo-altaya/75", tips: "Не путайте посещение смотровой с поездкой вниз в долину. Спуск на обычном легковом автомобиле может быть рискованным, особенно после дождя и в межсезонье. Перед поездкой проверьте состояние дороги, тормоза, шины и прогноз. Не оставляйте машину на уклоне и не подходите к неограждённым краям. Если планируете спуск, заложите существенно больше времени и оцените возможности автомобиля." },
+                        { name: "8. Чуйские меандры", coords: [50.265098, 87.703294], desc: "Панорамная точка с видом на извилистое русло Чуи и долину на фоне Северо-Чуйского хребта. Это отдельный съезд с основного маршрута, поэтому заложите время на подъезд и осмотр.", time: "20–30 минут", tips: "Подъезд проходит по горной дороге. Перед поездкой оцените состояние покрытия и не продолжайте путь, если дорога размокла или автомобиль не подходит для подъёма.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQnwjW4PNBR1Zhv9tX1W3fkSpHzfT-2yYpHqr4rCuqHbpz87XUzKOKfSAY&s=10" },
+                        { name: "9. Акташский ретранслятор", coords: [50.340326, 87.748528], desc: "Высокогорная радиорелейная вышка и смотровая площадка примерно в 18 км от Акташа. С высоты около 3000 метров открываются виды на Курайскую степь, долину Чуи и Северо-Чуйский хребет. При ясной погоде можно увидеть особенно выразительные панорамы гор.", time: "Заложите не менее 1–1,5 часа на подъезд и осмотр", tips: "Это не обычная остановка у трассы: после асфальта начинается грунтовый подъём. Не планируйте подъём на неподготовленном легковом автомобиле; проверьте погоду, состояние дороги и возможность проезда у местных. Закат красив, но возвращаться по горной грунтовке в темноте не стоит.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSP_EqcBSvunKk9l34O7zQJ_2Gu3WkKP8NWOxEcGJZUKkttmDk7JrPAVS4C&s=10" },
+                        { name: "9. База отдыха в Акташе", coords: [50.310651, 87.577137], desc: "Возвращение на базу после радиального маршрута к Кату-Ярыку. Отдых и подготовка к следующему дню.", time: "Ночёвка", tips: "День длинный: выезжайте пораньше, возьмите воду, еду и запас топлива." }
+                    ]},
+                    { day: 6, locations: [
+                        { name: "1. Гейзеровое озеро", coords: [50.289248, 87.667155], desc: "Гейзеровое озеро - небольшой лесной водоём с прозрачной бирюзовой водой и меняющимися круговыми узорами на дне. Их создают подземные источники: потоки воды поднимают со дна голубоватую глину и песок, формируя рисунок, который постоянно меняется. Название немного обманчиво: это не фонтанирующий горячий гейзер, а озеро с родниковым питанием. В солнечную погоду оттенки воды особенно яркие, а отражения деревьев делают место похожим на природную картину.", time: "30–45 минут", tips: "От парковки к озеру ведёт деревянный настил. Не заходите в воду, не бросайте в неё предметы и не сходите с оборудованной тропы. Условия и стоимость посещения уточняйте на месте.", photo: "https://imcdn.bolshayastrana.com/1200x628/BS_1ea81f4cbac0406de5092d9819749463675da020a73e46b2ca15ff626f48f37d.jpeg", photoPage: "https://bolshayastrana.com/dostoprimechatelnosti/altaj/gejzernoe-ozero-100" },
+                        { name: "2. Смотровая площадка в Курайской степи", coords: [50.244997, 87.861514], desc: "Курайская степь - широкая высокогорная котловина, окружённая горными хребтами. С обзорной площадки особенно хорошо виден Северо-Чуйский хребет с его ледниками и снежными вершинами, а на переднем плане раскрывается простор степи с сухими руслами и необычными волнистыми формами рельефа. Ветер, свет и облака быстро меняют картину: утром горы часто выглядят особенно объёмными, а после снегопада вершины контрастируют с тёмными склонами. Это место для неспешной остановки и панорамных фотографий.", time: "30–45 минут", photo: "https://www.vtourisme.com/images/a_big008/gig-rub01.jpg", photoPage: "https://www.vtourisme.com/altaj/bogatstva-altaya/1446-gigantskaya-ryab-techeniya", tips: "Подъезд может идти по грунтовке с крутым финальным подъёмом. После дождя легковой автомобиль может не пройти; можно оставить машину ниже и подняться пешком." },
+                        { name: "3. Курайский хайвей", coords: [50.237923, 87.982873], desc: "Живописный участок Чуйского тракта через Курайскую степь. Дорога проходит по широкой долине, а на горизонте открывается панорама Северо-Чуйского хребта. Здесь особенно хорошо ощущается простор высокогорной степи.", time: "20–30 минут на остановки", tips: "Не устраивайте фотосессии на проезжей части и не съезжайте на хрупкие степные участки. Останавливайтесь только в безопасных карманах.", photo: "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/1d/d3/2e/caption.jpg?w=1100&h=800&s=1" },
+                        { name: "4. Марс-1 и Марс-2 в Чаган-Узуне", coords: [50.059897, 88.297358], extraCoords: [{ label: "Марс-2", coords: [50.047021, 88.268063] }], desc: "Марс-1 и Марс-2 - участки урочища Кызыл-Чин, где эрозия вырезала в древних осадочных породах гребни, овраги и разноцветные холмы. Красные, охристые, жёлтые, серые и лиловые оттенки связаны с минеральным составом разных слоёв. Марс-1 обычно посещают первым: здесь проще подъезд и хорошо видны яркие полосатые склоны. Марс-2 расположен дальше по долине и выглядит более диким и масштабным. На прогулке можно рассмотреть, как вода и ветер постепенно формируют этот необычный рельеф.", time: "1–1,5 часа", photo: "https://karoaltai.ru/thumb/2/bbJrgwOqdsptdhbhR5A_bg/900r/d/mars41.jpg", photoPage: "https://karoaltai.ru/altajskij-mars", tips: "К Марсу-1 ведёт грунтовый подъезд; к Марсу-2 от основных точек обычно требуется пеший переход или местная заброска. После дождя грунтовые дороги и тропы могут стать трудными. Не разрушайте хрупкие глиняные формы." },
+                        { name: "5. Кош-Агач", coords: [49.994541, 88.681038], desc: "Посёлок в широкой высокогорной Чуйской степи, где можно сделать остановку, заправиться, перекусить и пополнить запасы перед обратной дорогой.", time: "30–45 минут", tips: "Проверьте запас топлива и наличие нужных продуктов: дальше инфраструктура встречается реже.", photo: "https://cs9.pikabu.ru/post_img/2019/04/21/8/1555853387176611455.jpg" },
+                        { name: "6. Тархатинский мегалитический комплекс", coords: [49.800983, 88.496234], desc: "Группа древних каменных плит и менгиров в Чуйской степи, которую часто называют алтайским Стоунхенджем. Комплекс интересен расположением камней и археологическими гипотезами о его назначении.", time: "30–45 минут", tips: "К комплексу ведёт грунтовая дорога. Уточните проходимость и не заезжайте на памятник автомобилем; уважайте археологический объект.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQe6B4DR50iLgjKT5IjxWOD4lnACO6cLqFyixTena-V0w&s=10" },
+                        { name: "7. Возвращение на базу в Акташе", coords: null, mapQuery: "Базы отдыха Акташ Республика Алтай", desc: "Возвращаемся в Акташ после поездки по Курайской и Чуйской степям. Вечер можно оставить свободным для отдыха и сборов.", time: "Ночёвка", tips: "Перед следующим днём проверьте время вылета и заложите большой запас на дорогу до аэропорта Горно-Алтайска." }
+                    ]},
+                    { day: 7, locations: [
+                        { name: "1. Аэропорт Горно-Алтайск", coords: [51.966, 85.833], desc: "Финиш путешествия и вылет домой. Дорога из Акташа до аэропорта занимает не менее шести часов без учёта остановок. По пути можно повторно заехать в понравившиеся места, но только если остаётся достаточный запас до регистрации и вылета.", time: "Не менее 6 часов в пути + остановки", tips: "Не планируйте плотную экскурсионную программу в день вылета. Учитывайте ремонтные работы, погоду, трафик и время на возврат арендованного автомобиля. Для авиарейса лучше иметь дополнительный резерв.", photo: "https://rgk-aero.ru/upload/resize_cache/sprint.editor/0f6/mhjqfgag6osr5bj4s769bnpkn482x6cg/1920_1280_1/IMG_5856.jpg" }
+                    ]}
+                ]
+            },
+            '14-days': { info: {
+1:"День 1. Манжерок, Талдинские пещеры, знаменитая чайная, Сад пионов и заселение в Чемале.",
+2:"Сегодня исследуем Чемальский район: прогуляемся по острову Патмос и Козьей тропе, увидим Чемальскую ГЭС, посетим ущелье Че-Чкыш и доедем до Ороктойского моста.",
+3:"Путь лежит из Чемала в Онгудай. По дороге посетим ботанический сад в Камлаке, питомник хаски и северных оленей, поднимемся на Семинский перевал и сделаем остановку у смотровой площадки в районе Каракола.",
+4:"Продолжаем путь по Чуйскому тракту. Нас ждут перевал Чике-Таман, Катунские террасы, древние каменные изваяния, слияние Чуи и Катуни, петроглифы Калбак-Таш и водопад Ширлак. К вечеру прибываем в район Акташа.",
+5:"Отправляемся на восток: увидим Гейзеровое озеро, широкие просторы Курайской степи и Северо-Чуйский хребет, проедем по Чуйскому хайвею, посетим урочище Кызыл-Чин с его разноцветными склонами, заедем в Кош-Агач и к Тархатинскому мегалитическому комплексу. Вечером возвращаемся в Акташ.",
+6:"Сегодня направляемся на Улаганское плато: увидим Красные ворота и высокогорные озёра, пересечём Улаганский перевал, посетим Пазырыкские курганы и спустимся по серпантину Кату-Ярыка в долину Чулышмана. Ночуем на базе в долине.",
+7:"День посвящён долине Чулышмана. Переправимся к Каменным грибам Аккурум, прогуляемся к водопаду Куркуре, а свободное время можно провести в конной прогулке с местным сопровождающим.",
+8:"Едем к южному берегу Телецкого озера, в район мыса Кырсай. Отсюда пересекаем озеро на пароме и прибываем в Артыбаш на северном берегу.",
+9:"Утро оставляем для отдыха на берегу Телецкого озера, затем отправляемся на катере к водопаду Корбу. После прогулки возвращаемся в Артыбаш.",
+10:"Свободный день на Телецком озере. Можно отдохнуть на берегу, прогуляться по окрестностям или выбрать дополнительную водную прогулку по погоде и настроению.",
+11:"Завершаем путешествие и отправляемся из Артыбаша в аэропорт Горно-Алтайска. Перед выездом проверьте время рейса и заложите запас на дорогу."
+}, days: [{ day: 1, locations: [
+                        { name: "1. Курорт Манжерок", coords: [51.817372, 85.810023], desc: "Всесезонный курорт у озера Манжерок и подножия Малой Синюхи. Можно подняться по канатной дороге на смотровые площадки, погулять по территории и заглянуть в парк развлечений. Отличная первая остановка, чтобы увидеть Алтай с высоты.", time: "1,5–2,5 часа", tips: "Работа канатных дорог зависит от погоды. Перед поездкой проверьте расписание и доступность подъёмников.", photo: "https://xn--80akcrghjp.xn--p1ai/uploads/images/page/dFtEUaFYzrY5tciI0nW4wB0vP9eitPE22bNBm2Xq.jpg", photoPage: "https://xn--80akcrghjp.xn--p1ai/walking-tickets" },
+                        { name: "2. Талдинские пещеры", coords: [51.778761, 85.730661], desc: "Большой пещерный комплекс на берегу Катуни. Здесь можно пройти по оборудованным тропам, заглянуть в гроты и познакомиться с необычным рельефом скал. Напротив находятся парк Рериха, грот Ихтиандра и набережная у парк-отеля «Алтика».", time: "1–1,5 часа", tips: "Возьмите удобную обувь: на тропах есть лестницы и неровные участки. Экскурсионные программы и стоимость уточняйте на месте.", photo: "https://static.tildacdn.com/tild6661-6533-4365-b262-313931356536/4d64ae70c902175929ac.jpeg", photoPage: "https://ivengoaltay.ru/ekskursii-po-gornomu-altayu" },
+                        { name: "3. Знаменитая чайная", coords: [51.641651, 85.762543], desc: "Время обедать! Легендарная чайная в Усть-Семе связана со съёмками фильма Василия Макаровича Шукшина «Живёт такой парень». Здание восстановили, а сама остановка стала отличным поводом передохнуть, поесть и прикоснуться к истории Чуйского тракта.", time: "45–60 минут", tips: "Уточните режим работы и наличие свободных мест перед поездкой.", photo: "https://altayrealt.ru/picture/14352/710x436.jpg", photoPage: "https://altayrealt.ru/arhitektura/71148" },
+                        { name: "4. Сад пионов", coords: [51.495454, 85.997679], desc: "Интересная локация с удивительным садом, антуражным декором и собственным рестораном. Здесь можно неспешно прогуляться по территории, рассмотреть оформление сада и сделать остановку на отдых или обед.", time: "40–60 минут", tips: "Совсем рядом находится музей под открытым небом «Форт Куюм». Если располагаете временем, можно заехать и посетить его. <a href=\"https://yandex.ru/maps/?text=Форт%20Куюм%20Республика%20Алтай\" target=\"_blank\" rel=\"noopener\">Найти Форт Куюм на карте ↗</a>", photo: "https://uploads2.stells.info/fJwBLHJTbABjULrGvYfAGvgPMto%3D/952x600/jpg/2/d6/2d6bd8d6d219bca275232cc6b8414ed5.jpg", photoPage: "https://www.alean.ru/hotels/rossiya/respublika_altay/chemalskiy_rayon/elekmonar/sad_pionov_eko_park/" },
+                        { name: "5. База отдыха в селе Чемал", coords: [51.433449, 85.980230], desc: "Финальная точка первого дня маршрута. Приезжаем на базу отдыха в селе Чемал, заселяемся и проводим вечер в горах. Завтра отсюда стартуем по следующему маршруту.", time: "Заселение и отдых", tips: "Заранее выберите место проживания, уточните условия заселения и подтвердите бронь.", photo: "https://mirturbaz.ru/uploads/picture/pic/2122592/big_123.jpg", photoPage: "https://mirturbaz.ru/russia/respublika-altay/chemal/f/best" }
+                    ]},
+{ day: 2, locations: [
+                        { name: "1. Остров Патмос", coords: [51.398380, 86.000320], desc: "Скалистый остров посреди Катуни с храмом Иоанна Богослова, подвесным мостом и образом Богородицы, высеченным в скале.", time: "30–40 минут", tips: "На мосту возможны очереди. Уважайте правила посещения храма.", photo: "https://commons.wikimedia.org/wiki/Special:FilePath/Остров_Патмос.JPG?width=1000", photoPage: "https://commons.wikimedia.org/wiki/File:Остров_Патмос.JPG" },
+                        { name: "2. Козья тропа", coords: [51.396814, 86.002730], endCoords: [51.391918, 86.003948], desc: "Пешеходная тропа по склону Бешпека над Катунью, соединяющая район Патмоса с Чемальской ГЭС.", time: "30–50 минут", tips: "Есть участки над обрывом. Нужна удобная обувь; не подходите к краю.", photo: "https://commons.wikimedia.org/wiki/Special:FilePath/Козья_тропа.jpg?width=1000", photoPage: "https://commons.wikimedia.org/wiki/File:Козья_тропа.jpg" },
+                        { name: "3. Чемальская ГЭС", coords: [51.391080, 86.004800], desc: "Историческая гидроэлектростанция, построенная в 1935 году на реке Чемал. Рядом находится место слияния Чемала и Катуни.", time: "20–30 минут", tips: "Осмотрите плотину и панорамы скальных берегов. Доступ на отдельные участки может быть ограничен.", photo: "https://commons.wikimedia.org/wiki/Special:FilePath/Чемальская_ГЭС.jpg?width=1000", photoPage: "https://commons.wikimedia.org/wiki/File:Чемальская_ГЭС.jpg" },
+                        { name: "4. Туристический рынок у Чемальской ГЭС", coords: [51.390655, 86.004488], desc: "Торговые ряды с алтайским мёдом, травяными сборами, сувенирами, изделиями ручной работы и местными сладостями.", time: "20–40 минут", tips: "Перед посещением найдите актуальное расположение торговых рядов на карте.", photo: "https://turistka.ru/im/14/2025_chemal_12.jpg" },
+                        { name: "5. Урочище Че-Чкыш", coords: [51.261475, 86.071725], extraCoords: [{ label: "Водопад", coords: [51.264583, 86.074855] }, { label: "Смотровая площадка", coords: [51.263650, 86.070392] }], desc: "Узкое ущелье с отвесными скалами, небольшим водопадом, петроглифами и смотровой площадкой над долиной Катуни.", time: "1–1,5 часа", tips: "Подъём к смотровой площадке местами крутой. Возможна плата за посещение.", photo: "https://commons.wikimedia.org/wiki/Special:FilePath/Чечкыш.jpg?width=1000", photoPage: "https://commons.wikimedia.org/wiki/Category:Protected_areas_of_Russia/0410057" },
+                        { name: "6. Ороктойский мост", coords: [51.122927, 86.165701], desc: "Мост через Катунь возле села Ороктой. Здесь река проходит через узкое скалистое ущелье с Тельдекпенскими порогами.", time: "30–45 минут", tips: "Учитывайте время на дорогу и состояние грунтовых участков. Не подходите близко к бурным потокам.", photo: "https://www.vtourisme.com/images/stories/my10/image082.jpg" },
+                        { name: "7. Водопад Бельтертуюк", coords: [50.960545, 86.288532], desc: "Каскадный водопад за селом Куюс. Вода проходит несколькими ступенями среди скал; часть водопада видна с моста.", time: "40–60 минут", tips: "Последний участок дороги может быть сложным для легковых автомобилей. Проверьте состояние дороги перед выездом.", photo: "https://commons.wikimedia.org/wiki/Special:FilePath/Водопадик_на_Бельтертуюке.jpg?width=1000", photoPage: "https://commons.wikimedia.org/wiki/File:Водопадик_на_Бельтертуюке.jpg" },
+                        { name: "8. Форелевое хозяйство «Тук-Зажа»", coords: [51.346312, 86.109858], desc: "Форелевое хозяйство возле села Уожан с водоёмами, наполненными горной водой. Возможность посмотреть на форель и, если доступно, приобрести рыбу.", time: "30–60 минут", tips: "Перед посещением уточните режим работы и возможность экскурсии.", photo: "https://avatars.mds.yandex.net/get-altay/4285172/2a00000179f9c64540ef96b587077ecd5f52/XXXL" }
+                    ]},
+{ day: 3, locations: [
+                        { name: "1. Горно-Алтайский ботанический сад в селе Камлак", coords: [51.6225, 85.704444], desc: "Ботанический сад расположен на большой естественной поляне в урочище Чистый Луг, среди гор и реликтового леса. Здесь собраны более 1 800 видов и сортов растений из разных природных зон Алтая, России и других регионов мира. Прогулка проходит по ухоженным дорожкам и тематическим экспозициям: можно рассмотреть редкие и эндемичные растения, альпийские горки, заглянуть к небольшому пруду, а затем пройти к экотропе вдоль реки Семы и смотровым площадкам. Это не просто цветник, а тихий природный уголок, где приятно сделать паузу после дороги.", time: "45–75 минут", tips: "Официальный адрес: Шебалинский район, село Камлак, урочище Чистый Луг. В весенне-летний сезон сад принимает посетителей ежедневно; расписание, стоимость и доступность экскурсий лучше проверить на официальном сайте перед выездом.", photo: "https://altai.travel/backend/storage/media/1962/01JWVC22B9H7EYE0SCBVC0ENAZ.jpg", photoPage: "https://altai.travel/tourism/places/botanicheskiy-sad" },
+                        { name: "2. Питомник хаски и северных оленей «Сибирская легенда»", coords: [51.635146, 85.693207], desc: "Остановка для знакомства с северными оленями и собаками породы сибирский хаски. В питомнике можно узнать об особенностях содержания животных, их повадках и работе ездовых собак, понаблюдать за ними и сделать фотографии. Формат посещения зависит от сезона и действующих программ: иногда доступны экскурсии и личное знакомство с животными, но набор активностей лучше уточнить заранее.", time: "45–60 минут", tips: "Питомник переезжал, поэтому перед выездом обязательно уточните актуальную точку, расписание, стоимость и необходимость предварительной записи.", photo: "https://avatars.mds.yandex.net/get-altay/16113897/2a00000198a2200638999b9c853efe663314/XXXL" },
+                        { name: "3. Семинский перевал", coords: [51.03843, 85.59244], desc: "Семинский перевал пересекает Семинский хребет и служит природной границей между Северным и Центральным Алтаем. Дорога поднимается через несколько высотных природных поясов: лиственные и сосновые леса постепенно сменяются кедровой тайгой, а выше встречаются субальпийские луга и низкорослая горная растительность. На вершине перевала находятся памятный обелиск, торговые ряды и места для короткой прогулки. Здесь хорошо почувствовать перемену климата и ландшафта: даже в тёплый день наверху часто прохладнее и ветренее, чем в долинах.", time: "30–45 минут", tips: "На перевале высота седловины около 1 717 м; не путайте её с высотой окружающих вершин. Даже летом может быть заметно холоднее, чем в долине. Возьмите ветровку и не задерживайтесь на проезжей части.", photo: "https://static.tildacdn.com/tild3034-3134-4264-b833-373863323761/__.jpg", photoPage: "https://altaicars.ru/sight4" },
+                        { name: "4. Смотровая площадка у села Каракол", coords: [50.802954, 85.922427], desc: "Остановка ради панорамы долины и окружающих гор в районе Каракола. Хорошее место перевести дух и посмотреть на смену ландшафтов по мере движения на юго-восток.", time: "15–25 минут", tips: "У смотровых в этом районе несколько возможных съездов. Выбирайте безопасную площадку, не останавливайтесь на узкой обочине.", photo: "https://avatars.mds.yandex.net/get-altay/9709178/2a00000189d2ebdbe1758013d56c39a23781/XXXL" },
+                        { name: "5. База отдыха в селе Онгудай", coords: [50.739983, 86.153330], desc: "Финиш третьего дня. Заселяемся, отдыхаем после дороги и готовимся к насыщенному дню по Чуйскому тракту.", time: "Заселение и отдых", tips: "Заранее подтвердите бронь, наличие парковки и возможность раннего выезда." }
+                    ]},
+{ day: 4, locations: [
+                        { name: "1. Дача Газпром у поворота на Степушку", coords: [50.774538, 86.465633], desc: "Короткая остановка у местного объекта возле поворота на Степушку. Осмотрите его с дороги и не заходите на закрытую территорию.", time: "10–15 минут", tips: "Соблюдайте границы частной территории и дорожные ограничения. Не пытайтесь подъезжать к закрытым или охраняемым участкам.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRYSaxQdL0q0HGiUqpGqq3blMd_b5QaAdT0J0MdzzuHOaT3111j9HV-bpSj&s=10" },
+                        { name: "2. Перевал Чике-Таман", coords: [50.645, 86.312222], desc: "Живописный перевал высотой около 1295 метров на Чуйском тракте. Серпантин поднимается на Теректинский хребет, а наверху оборудована смотровая площадка. Можно увидеть изгибы современной дороги и следы старого тракта, который проходил здесь раньше.", time: "30–45 минут", tips: "Оставьте автомобиль на парковке и поднимитесь на смотровую пешком. На площадке и у торговых рядов бывает многолюдно.", photo: "https://probiysk.ru/images/wp-content/uploads/2021/05/chike-taman-8.jpg" },
+                        { name: "3. Купчегень: цветение маральника (опционально)", coords: null, mapQuery: "Цветение маральника Купчегень Республика Алтай", desc: "Весенняя дополнительная остановка ради цветущего маральника на склонах. В сезон горы покрываются розово-лиловыми пятнами, но сроки цветения зависят от высоты, погоды и конкретного года.", time: "20–40 минут", tips: "Включайте эту точку только в период цветения и при безопасном съезде с трассы. Не вытаптывайте кустарники и не ломайте ветви.", photo: "https://ganemantravel.ru/upload/iblock/13a/facv1yup9rd757i67n94yeyyseivvtrr.jpg" },
+                        { name: "4. Песчаная стена у Малого Яломана", coords: [50.560124, 86.563487], desc: "Песчаная стена у Малого Яломана представляет собой обнажение слоистых осадочных пород, которые за долгие геологические эпохи были подняты, размыты и обработаны ветром и водой. Цвета и полосы хорошо читаются на открытом склоне и особенно выразительны при боковом солнечном свете. Это короткая остановка ради необычной фактуры скал и панорамы долины Катуни, а не оборудованный парк с ограждениями и инфраструктурой.", time: "15–25 минут", tips: "Не забирайтесь на осыпающиеся участки, не стойте под нависающими фрагментами скалы и не оставляйте автомобиль на узкой обочине.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFbOWEsl6QeHu_IDDSEOcKHmK6HcwYRpKTzl3gFGfCyg&s=10" },
+                        { name: "5. Смотровая на Катунские террасы", coords: [50.520389, 86.566655], desc: "Катунские террасы хорошо заметны как широкие ступени на склонах долины. Это следы древней работы реки: со временем Катунь меняла уровень и русло, оставляя над современной поймой участки прежних речных равнин. С видовой точки можно рассмотреть рельеф долины, изгибы реки и противоположные склоны. Особенно выразительно место выглядит при низком боковом солнце, когда перепады высот и контуры террас становятся заметнее.", time: "15–25 минут", tips: "В районе несколько съездов и обзорных точек. Уточните нужную площадку по карте и выбирайте безопасное место для остановки; не подходите к неограждённым краям.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHg4mUQg-c_0pyW6Dmt4hp8PZ9jAlZEKurMT2OS2Ekwg&s=10" },
+                        { name: "6. Три каменных воина", coords: [50.434123, 86.622569], desc: "У дороги возле Ини находятся древние каменные изваяния, которые в туристических описаниях называют тремя каменными воинами. Такие памятники связывают с древними погребальными и поминальными традициями Центральной Азии. Их точное назначение и датировка требуют аккуратного исторического комментария, поэтому лучше воспринимать их как часть большого археологического наследия Чуйского тракта, а не как достоверно установленное изображение конкретных воинов.", time: "15–25 минут", tips: "Это археологический объект: не трогайте и не перемещайте камни, не пытайтесь очищать или обводить изображения мелом, не оставляйте мусор.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS10pVqDGi_yScJkbynuXdOSnAEsqt32B85gT-jKeD0mx9GbrprxDsGkLA&s=10" },
+                        { name: "7. Слияние Чуи и Катуни", coords: [50.39479, 86.675081], desc: "В этом месте Чуя впадает в Катунь, и две реки заметно различаются по цвету и характеру воды. Катунь часто выглядит бирюзовой или зеленовато-голубой, а Чуя после дождей и таяния снега приносит больше взвешенных частиц и может казаться серо-молочной. Контраст особенно хорошо виден с обзорной точки выше слияния, хотя выраженность границы зависит от сезона, осадков и уровня воды. Это одна из самых фотогеничных остановок Чуйского тракта.", time: "20–30 минут", tips: "До обзорной точки нужно пройти пешком. Не спускайтесь к воде по крутым неустойчивым склонам и не подходите к краю обрыва.", photo: "https://ic.pics.livejournal.com/galyagorshenina/52268261/883017/883017_original.jpg" },
+                        { name: "8. Петроглифы Калбак-Таш", coords: null, mapQuery: "Петроглифы Калбак-Таш Республика Алтай", desc: "Калбак-Таш - один из наиболее известных комплексов наскального искусства Алтая. На скальных плоскостях сохранились изображения животных, людей, сцен охоты, колесниц и знаков, созданные в разные исторические эпохи - от древнейших периодов до раннего Средневековья. Здесь есть и древнетюркские рунические надписи. Многие рисунки не сразу заметны: часть линий выветрена, поэтому экскурсовод помогает находить изображения и объясняет, как менялись сюжеты и техника их нанесения. Это настоящий музей под открытым небом, где важно соблюдать охранный режим.", time: "40–60 минут", tips: "Лучше посещать с экскурсоводом: он поможет увидеть рисунки и объяснит их значение. Не трогайте и не обводите изображения, не наносите на камни мел или краску. Уточните режим работы и стоимость перед поездкой.", photo: "https://3darchaeology.ru/upload/iblock/94c/culudds1325z5aih4oh0jxesj3vupe0n.JPG", photoPage: "https://3darchaeology.ru/proekty/catalog-3d-tours/petroglify-urochishcha-kalbak-tash" },
+                        { name: "9. Урочище Адыр-Кая", coords: [50.409006, 86.8761], desc: "Живописная скальная местность на Чуйском тракте с панорамами долины и характерными каменными выходами. Остановка для короткой прогулки и фотографий.", time: "15–25 минут", tips: "Перед выездом откройте точку в навигаторе и проверьте подъезд. В этом районе встречаются похожие названия и несколько обзорных мест.", photo: "https://www.welcometoaltai.ru/attractions/kezer-tash/photo/1.jpg" },
+                        { name: "10. Смотровая площадка у Ак-Бома", coords: [50.352860, 87.055467], desc: "Видовая остановка в районе Белого Бома, где Чуйский тракт проходит среди скальных склонов и долины Чуи.", time: "10–20 минут", tips: "Останавливайтесь только на оборудованных карманах и площадках, не на узкой обочине.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCl-GUMGDuRhhxC5KzodTkKVOnH_wbxEnbubEPEgq-Ja7AzWo69We6HFKx&s=10" },
+                        { name: "11. Водопад Ширлак («Девичьи слёзы»)", coords: [50.345554, 87.219053], desc: "Небольшой водопад на притоке Чуи, известный под названием «Девичьи слёзы». К нему ведёт короткая пешая тропа от Чуйского тракта; особенно красиво место после дождей и в период активного таяния.", time: "20–35 минут", tips: "Тропа может быть скользкой. Не подходите к краю водопада и берегите обувь от мокрых камней.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCl-GUMGDuRhhxC5KzodTkKVOnH_wbxEnbubEPEgq-Ja7AzWo69We6HFKx&s=10" },
+                        { name: "12. База отдыха в районе Акташа", coords: null, mapQuery: "Базы отдыха Акташ Республика Алтай", desc: "Заселение после насыщенного дня на Чуйском тракте. Акташ станет отправной точкой для двух следующих радиальных маршрутов.", time: "Заселение и отдых", tips: "Заранее выберите базу отдыха в Акташе, уточните условия заселения и наличие парковки. Удобно выехать утром без спешки." }
+                    ]},
+{ day: 5, locations: [
+                        { name: "1. Гейзеровое озеро", coords: [50.289248, 87.667155], desc: "Гейзеровое озеро - небольшой лесной водоём с прозрачной бирюзовой водой и меняющимися круговыми узорами на дне. Их создают подземные источники: потоки воды поднимают со дна голубоватую глину и песок, формируя рисунок, который постоянно меняется. Название немного обманчиво: это не фонтанирующий горячий гейзер, а озеро с родниковым питанием. В солнечную погоду оттенки воды особенно яркие, а отражения деревьев делают место похожим на природную картину.", time: "30–45 минут", tips: "От парковки к озеру ведёт деревянный настил. Не заходите в воду, не бросайте в неё предметы и не сходите с оборудованной тропы. Условия и стоимость посещения уточняйте на месте.", photo: "https://imcdn.bolshayastrana.com/1200x628/BS_1ea81f4cbac0406de5092d9819749463675da020a73e46b2ca15ff626f48f37d.jpeg", photoPage: "https://bolshayastrana.com/dostoprimechatelnosti/altaj/gejzernoe-ozero-100" },
+                        { name: "2. Смотровая площадка в Курайской степи", coords: [50.244997, 87.861514], desc: "Курайская степь - широкая высокогорная котловина, окружённая горными хребтами. С обзорной площадки особенно хорошо виден Северо-Чуйский хребет с его ледниками и снежными вершинами, а на переднем плане раскрывается простор степи с сухими руслами и необычными волнистыми формами рельефа. Ветер, свет и облака быстро меняют картину: утром горы часто выглядят особенно объёмными, а после снегопада вершины контрастируют с тёмными склонами. Это место для неспешной остановки и панорамных фотографий.", time: "30–45 минут", photo: "https://www.vtourisme.com/images/a_big008/gig-rub01.jpg", photoPage: "https://www.vtourisme.com/altaj/bogatstva-altaya/1446-gigantskaya-ryab-techeniya", tips: "Подъезд может идти по грунтовке с крутым финальным подъёмом. После дождя легковой автомобиль может не пройти; можно оставить машину ниже и подняться пешком." },
+                        { name: "3. Курайский хайвей", coords: [50.237923, 87.982873], desc: "Живописный участок Чуйского тракта через Курайскую степь. Дорога проходит по широкой долине, а на горизонте открывается панорама Северо-Чуйского хребта. Здесь особенно хорошо ощущается простор высокогорной степи.", time: "20–30 минут на остановки", tips: "Не устраивайте фотосессии на проезжей части и не съезжайте на хрупкие степные участки. Останавливайтесь только в безопасных карманах.", photo: "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/1d/d3/2e/caption.jpg?w=1100&h=800&s=1" },
+                        { name: "4. Марс-1 и Марс-2 в Чаган-Узуне", coords: [50.059897, 88.297358], extraCoords: [{ label: "Марс-2", coords: [50.047021, 88.268063] }], desc: "Марс-1 и Марс-2 - участки урочища Кызыл-Чин, где эрозия вырезала в древних осадочных породах гребни, овраги и разноцветные холмы. Красные, охристые, жёлтые, серые и лиловые оттенки связаны с минеральным составом разных слоёв. Марс-1 обычно посещают первым: здесь проще подъезд и хорошо видны яркие полосатые склоны. Марс-2 расположен дальше по долине и выглядит более диким и масштабным. На прогулке можно рассмотреть, как вода и ветер постепенно формируют этот необычный рельеф.", time: "1–1,5 часа", photo: "https://karoaltai.ru/thumb/2/bbJrgwOqdsptdhbhR5A_bg/900r/d/mars41.jpg", photoPage: "https://karoaltai.ru/altajskij-mars", tips: "К Марсу-1 ведёт грунтовый подъезд; к Марсу-2 от основных точек обычно требуется пеший переход или местная заброска. После дождя грунтовые дороги и тропы могут стать трудными. Не разрушайте хрупкие глиняные формы." },
+                        { name: "5. Кош-Агач", coords: [49.994541, 88.681038], desc: "Посёлок в широкой высокогорной Чуйской степи, где можно сделать остановку, заправиться, перекусить и пополнить запасы перед обратной дорогой.", time: "30–45 минут", tips: "Проверьте запас топлива и наличие нужных продуктов: дальше инфраструктура встречается реже.", photo: "https://cs9.pikabu.ru/post_img/2019/04/21/8/1555853387176611455.jpg" },
+                        { name: "6. Тархатинский мегалитический комплекс", coords: [49.800983, 88.496234], desc: "Группа древних каменных плит и менгиров в Чуйской степи, которую часто называют алтайским Стоунхенджем. Комплекс интересен расположением камней и археологическими гипотезами о его назначении.", time: "30–45 минут", tips: "К комплексу ведёт грунтовая дорога. Уточните проходимость и не заезжайте на памятник автомобилем; уважайте археологический объект.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQe6B4DR50iLgjKT5IjxWOD4lnACO6cLqFyixTena-V0w&s=10" },
+                        { name: "7. Возвращение на базу в Акташе", coords: null, mapQuery: "Базы отдыха Акташ Республика Алтай", desc: "Возвращаемся в Акташ после поездки по Курайской и Чуйской степям. Вечер можно оставить свободным для отдыха и сборов.", time: "Ночёвка", tips: "Перед следующим днём проверьте время вылета и заложите большой запас на дорогу до аэропорта Горно-Алтайска." }
+                    ]},
+{ day: 6, locations: [{ name: "1. Красные ворота", coords: [50.364444, 87.633333], desc: "Красные ворота - эффектный узкий проход, где дорога на Улаган буквально прорезает массив красноватых скал. Окраску пород связывают с присутствием соединений железа и других минералов. Скальные стены поднимаются по обе стороны дороги, поэтому даже короткая остановка даёт ощущение настоящего горного коридора. Это природный памятник и одновременно действующий участок трассы, поэтому здесь особенно важно думать о безопасности.", time: "10–15 минут", tips: "Не выходите на проезжую часть ради фотографии и не останавливайтесь в местах, где автомобиль мешает движению. Фото делайте только с безопасной площадки.", photo: "https://club-voshod.com/files/materials/630/group_cf/krasnye_vorota_pamyatnik_prirody_altaya_3_6.jpg", photoPage: "https://club-voshod.com/info/pohodnoe_info/dostoprimechatelnosti/altai/krasnye_vorota_na_altae/" },
+{ name: "2. Мёртвое озеро", coords: [50.402618, 87.602449], desc: "Небольшое озеро в окрестностях Акташа и Улагана, известное местными легендами и необычным видом. ", time: "15–25 минут", tips: "Не заходите в воду и не пробуйте её. Уточните точку подъезда: под этим названием могут иметься в виду разные водоёмы.", photo: "https://goldaltai.ru/wp-content/uploads/2021/05/mertvoe_ozero-3.jpg.webp" },
+{ name: "3. Застава Валентина Михайловича", coords: [50.473860, 87.624012], desc: "Остановка у памятного места на дороге в сторону Улаганского плато. ", time: "10–20 минут", tips: "Уточните расположение памятного места у местных жителей перед поездкой.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYrPQgKj9onHYDEhbsIUKi8qhmxaJZXoqvIMusCKaw9MaYeMKBgjmfrzc&s=10" },
+{ name: "4. Озеро Киделю", coords: [50.499238, 87.650431], desc: "Небольшое высокогорное озеро у дороги Акташ — Улаган, в районе Улаганского перевала. В ясную погоду в воде отражаются склоны и небо.", time: "15–25 минут", tips: "Высота здесь около двух километров над уровнем моря. Погода меняется быстро, держите тёплую одежду под рукой.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS5FB6O4IUpIElkpdmyABEjOZrKL-k8WORJ2fNli6w0R8WjWXjzHELnkO8&s=10" },
+{ name: "5. Улаганский перевал", coords: [50.4996, 87.65549], desc: "Высокогорный перевал на дороге между Акташем и Улаганом. Здесь открываются виды на горные склоны и хвойные леса; это одна из самых заметных высотных точек маршрута.", time: "15–25 минут", tips: "Учитывайте высоту и возможный ветер. На спуске соблюдайте скоростной режим.", photo: "https://altai-tour.ru/upload/medialibrary/37e/37e04b3644a7b3454af5768a1750c71a.jpg" },
+{ name: "6. Пазырыкские курганы", coords: [50.746828, 88.071946], desc: "Пять крупных древних курганов в урочище Пазырык, рядом с селом Балыктуюль. Памятник связан с пазырыкской культурой раннего железного века; археологические находки из этих курганов известны далеко за пределами Алтая.", time: "30–45 минут", tips: "Не поднимайтесь на насыпи и не нарушайте охранную зону памятника. Дорога после Улагана местами грунтовая.", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSeGWv6a_Cr2Vab4adigcscsi90adWB6sce0tQf4Z7PLRGWkbRsn8IPjM3q&s=10" },
+{ name: "7. Перевал Кату-Ярык и панорама долины Чулышмана", coords: [50.911610, 88.217680], desc: "Кату-Ярык - знаменитый крутой спуск с Улаганского плато в долину реки Чулышман. Со смотровой площадки открывается масштабная панорама: далеко внизу видна долина с извилистым руслом реки, зелёными участками поймы и отвесными склонами. Серпантин прорезает склон множеством крутых поворотов и позволяет оценить перепад высот более чем в 800 метров. Автомобильную дорогу открыли в 1989 году; до её появления местные жители пользовались конными тропами и водным путём через Телецкое озеро. При ясной погоде можно разглядеть отдельные водопады на противоположных склонах, но видимость зависит от сезона и облачности.", time: "1–1,5 часа", photo: "https://turistass.com/image/Articles75/c1250cf6ec-1.jpg", photoPage: "https://turistass.com/article/dolina-reki-chulyshman-i-pereval-katu-yaryk-zhivopisnyj-ugolok-gornogo-altaya/75", tips: "Не путайте посещение смотровой с поездкой вниз в долину. Спуск на обычном легковом автомобиле может быть рискованным, особенно после дождя и в межсезонье. Перед поездкой проверьте состояние дороги, тормоза, шины и прогноз. Не оставляйте машину на уклоне и не подходите к неограждённым краям. Если планируете спуск, заложите существенно больше времени и оцените возможности автомобиля." },
+{ name: "9. База отдыха в долине Чулышмана", coords: null, mapQuery: "Базы отдыха долина Чулышмана Республика Алтай", desc: "Завершаем день после спуска с перевала Кату-Ярык и заселяемся на базу отдыха в долине Чулышмана. Вечер оставляем для отдыха перед прогулками следующего дня.", time: "Заселение и отдых", tips: "Забронируйте проживание заранее и уточните, как организована переправа к водопадам и Каменным грибам." }]},
+{ day: 7, locations: [
+{ name: "1. Каменные грибы урочища Аккурум", coords: [51.111709,87.972941], desc: "Знаменитые каменные останцы в долине Чулышмана. Чтобы увидеть их вблизи, нужно переправиться через реку на моторной лодке и подняться по горной тропе. Наверху открываются виды на долину и причудливые каменные столбы.", time: "Около 2,5–4 часов с переправой и подъёмом", tips: "Подъём крутой и местами осыпной. Уточните переправу у базы, возьмите обувь с хорошим сцеплением и не поднимайтесь в дождь." , photo: "https://static.wixstatic.com/media/6d827a_ecdfb746b0ff4289917545ff98d6dc15~mv2.jpg/v1/fill/w_1000%2Ch_665%2Cal_c%2Cq_85%2Cusm_0.66_1.00_0.01/6d827a_ecdfb746b0ff4289917545ff98d6dc15~mv2.jpg", photoPage: "https://escapetosiberia.wixsite.com/escapetosiberia/post/altai-stone-mushrooms" },
+{ name: "2. Водопад Куркуре", coords: [50.901482,88.257898], desc: "Каскадный водопад на одноимённой реке, впадающей в Чулышман. Поток срывается со скального уступа примерно с 30-метровой высоты. К водопаду обычно добираются с переправой через Чулышман и пешей прогулкой.", time: "2–3 часа с переправой и прогулкой", tips: "Маршрут зависит от места проживания и состояния тропы. Организуйте лодочную переправу заранее и уточните уровень воды." , photo: "https://altayvillage.com/upload/iblock/a80/1e8uxl0c0xdgve3ft313vkmtzgd2c8f1.jpg", photoPage: "https://altayvillage.com/about/attractions/vodopad-kurkure/" },
+{ name: "3. Конные прогулки по долине Чулышмана", coords: [50.945,88.185], mapQuery: "Конные прогулки долина Чулышмана Республика Алтай", desc: "Свободное время для конной прогулки по долине Чулышмана. Маршрут и продолжительность выбираются с местными инструкторами с учётом погоды и опыта участников.", time: "1–2 часа или по договорённости", tips: "Уточните наличие лошадей, стоимость, маршрут и сопровождение заранее. Наденьте закрытую обувь и следуйте инструкциям сопровождающего." , photo: "https://dolinaaltai.ru/media/images/Kartinka_03.2e16d0ba.fill-990x536.format-webp.webp", photoPage: "https://dolinaaltai.ru/blog/dolina-chulyshman-serdce-gornogo-altaya/" },
+{ name: "4. База отдыха в долине Чулышмана", coords: null, mapQuery: "Базы отдыха долина Чулышмана Республика Алтай", desc: "Возвращение на базу после прогулок. Вечер для отдыха и подготовки к переезду на южный берег Телецкого озера.", time: "Ночёвка", tips: "Заранее выберите и забронируйте место проживания. Уточните, как организована переправа к водопадам и Каменным грибам." }
+]},
+{ day: 8, locations: [
+{ name: "1. Южный берег Телецкого озера, мыс Кырсай", coords: [51.343434,87.775728], desc: "Выезжаем к южному берегу Телецкого озера, в район мыса Кырсай и устья Чулышмана. Здесь заканчивается автомобильная дорога и начинается водный путь к северной части озера.", time: "Осмотр берега и подготовка к переправе", tips: "Согласуйте заранее отправление парома, условия перевозки автомобиля, тариф и погодные ограничения. Не путайте автомобильный паром с пассажирским экскурсионным катером." , photo: "https://idilesom.com/files/photos/places/b/67046ec56876d_1728343749.jpg", photoPage: "https://idilesom.com/goraltai/places/3977" },
+{ name: "2. Переправа на пароме до села Артыбаш", coords: [51.793,87.265356], desc: "Пересекаем Телецкое озеро на пароме и прибываем в село Артыбаш на северном берегу. Переправа зависит от расписания перевозчика, сезона и погоды.", time: "По расписанию парома", tips: "Заранее свяжитесь с перевозчиком, уточните дату, время, наличие мест и правила перевозки автомобиля. <a href='https://parom04.ru/' target='_blank' rel='noopener'>Сайт перевозчика: parom04.ru ↗</a>" , photo: "https://altayparom.ru/static/uploads/editor/20260517_204953_vougwest.jpg", photoPage: "https://altayparom.ru/" },
+{ name: "3. Заселение на базу отдыха в Артыбаше", coords: null, mapQuery: "Базы отдыха село Артыбаш Телецкое озеро", desc: "Прибываем в Артыбаш, заселяемся на базу отдыха на берегу Телецкого озера и отдыхаем после переправы.", time: "Заселение и отдых", tips: "Заранее выберите базу отдыха и подтвердите бронирование." }
+]},
+{ day: 9, locations: [
+{ name: "1. Отдых на базе в селе Артыбаш", coords: null, mapQuery: "Базы отдыха село Артыбаш Телецкое озеро", desc: "Спокойное утро и отдых на берегу Телецкого озера. Во второй половине дня отправляемся на водную экскурсию по озеру.", time: "Свободное время", tips: "Время выхода катеров зависит от сезона, погоды и выбранной программы." },
+{ name: "2. Водная экскурсия на катере к водопаду Корбу", coords: [51.706111,87.684167], desc: "Отправляемся на катере из Артыбаша к водопаду Корбу на восточном берегу Телецкого озера. После высадки можно пройти по оборудованной тропе к смотровой площадке у водопада.", time: "Экскурсия на несколько часов", tips: "Уточните расписание катеров, стоимость, продолжительность остановки и правила посещения территории Алтайского заповедника." , photo: "https://altai.travel/backend/storage/media/4693/conversions/01KC62E6RC3KFF8C1MJHMZ6QH5-preview.jpg", photoPage: "https://altai.travel/tourism/tours/teleckoe-ozero-2-dnya" },
+{ name: "3. Возвращение на базу в Артыбаше", coords: null, mapQuery: "Базы отдыха село Артыбаш Телецкое озеро", desc: "Возвращаемся в Артыбаш после экскурсии и проводим вечер на берегу Телецкого озера.", time: "Вечер и ночёвка" }
+]},
+{ day: 10, locations: [{ name: "1. Свободный день на Телецком озере", coords: null, mapQuery: "Село Артыбаш Телецкое озеро", desc: "Полноценный день отдыха на базе в Артыбаше. Можно провести время у воды, прогуляться по селу или выбрать дополнительную прогулку по озеру.", time: "Весь день", tips: "Дополнительные активности планируйте по погоде. Оставьте время на сборы и подготовку к дороге в Горно-Алтайск." , photo: "https://274418.selcdn.ru/cv08300-33250f0d-0664-43fc-9dbf-9d89738d114e/uploads/96460/db8c4807-468d-43e3-aec8-ba23d23165ad.jpg", photoPage: "https://usadba7etazh.ru/" }]},
+{ day: 11, locations: [{ name: "1. Аэропорт Горно-Алтайск", coords: [51.966,85.833], desc: "Завершение путешествия. Выезжаем из Артыбаша в аэропорт Горно-Алтайска.", time: "Ориентировочно 3–4 часа в пути без длительных остановок", tips: "Заложите дополнительный запас на дорожные условия, ремонтные работы и регистрацию на рейс. Время в пути проверьте перед выездом.", photo: "https://rgk-aero.ru/upload/resize_cache/sprint.editor/0f6/mhjqfgag6osr5bj4s769bnpkn482x6cg/1920_1280_1/IMG_5856.jpg" }]}]}
+        };
+
+        
+        routesData['7-days'].days = [...routesData['2-days'].days, ...routesData['7-days'].days];
+
+        (() => {
+            const root = document.documentElement;
+            const isCompactTouchDevice = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse) and (max-width: 900px)').matches;
+            const memoryGb = Number(navigator.deviceMemory) || 0;
+            const cpuCores = Number(navigator.hardwareConcurrency) || 0;
+            if (isCompactTouchDevice && ((memoryGb > 0 && memoryGb <= 3) || (cpuCores > 0 && cpuCores <= 4))) {
+                root.classList.add('low-performance-device');
+            }
+        })();
+
+        let myMap;
+        let currentRoute = null;
+        let currentDayNumber = 1;
+        let markers = [];
+
+        let currentRouteId = null;
+        let initialDayNumber = 1;
+        let telegramViewportHandler = null;
+        function lockTelegramVerticalSwipes() {
+            const webApp = window.Telegram && window.Telegram.WebApp;
+            if (!webApp) return;
+            try {
+                webApp.ready();
+                if (typeof webApp.expand === 'function') webApp.expand();
+                if (typeof webApp.disableVerticalSwipes === 'function') webApp.disableVerticalSwipes();
+            } catch (e) {}
+        }
+        function startApp(routeId, dayNum = 1) {
+            const webApp = window.Telegram && window.Telegram.WebApp;
+            if (webApp) {
+                lockTelegramVerticalSwipes();
+                if (typeof webApp.onEvent === 'function' && !telegramViewportHandler) {
+                    telegramViewportHandler = () => {
+                        lockTelegramVerticalSwipes();
+                        const stableHeight = Number(webApp.viewportStableHeight);
+                        if (stableHeight > 0) document.documentElement.style.setProperty('--app-viewport-height', stableHeight + 'px');
+                    };
+                    try { webApp.onEvent('viewportChanged', telegramViewportHandler); } catch (e) {}
+                }
+                const stableHeight = Number(webApp.viewportStableHeight);
+                if (stableHeight > 0) document.documentElement.style.setProperty('--app-viewport-height', stableHeight + 'px');
+            }
+            currentRouteId = routeId;
+            currentRoute = routesData[routeId];
+            initialDayNumber = dayNum;
+            document.getElementById('setup-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('setup-screen').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
+                if (typeof ymaps !== 'undefined' && ymaps.ready) ymaps.ready(initMap);
+                else initMap();
+            }, 350);
+        }
+        function getLastTrip() {
+            try { return JSON.parse(localStorage.getItem('altay-last-trip') || 'null'); } catch (e) { return null; }
+        }
+        function updateResumeButton() {
+            const saved = getLastTrip();
+            const button = document.getElementById('resume-trip');
+            if (!button || !saved || !routesData[saved.routeId]) return;
+            const names = {'2-days':'Чемальская история','7-days':'Чуйский тракт','14-days':'Золотое кольцо Алтая'};
+            button.textContent = '↗ Продолжить: ' + names[saved.routeId] + ' · день ' + (saved.day || 1);
+            button.style.display = 'block';
+        }
+        function resumeLastTrip() {
+            const saved = getLastTrip();
+            if (saved && routesData[saved.routeId]) startApp(saved.routeId, saved.day || 1);
+        }
+        function goHome() { location.reload(); }
+        function cleanStopName(name) { return String(name || '').replace(/^(?:\d+\.\s*)+/, '').trim(); }
+
+        function showPlaces() {
+            const app = document.getElementById('main-app');
+            const panel = document.getElementById('stops-panel');
+            app.classList.remove('map-expanded');
+            panel.style.removeProperty('display');
+            panel.classList.remove('is-collapsed');
+            panel.style.removeProperty('height');
+            panel.style.removeProperty('max-height');
+            panel.style.removeProperty('--panel-height');
+            panel.scrollTop = 0;
+            setNavActive('nav-places');
+            if (myMap) requestAnimationFrame(() => myMap.container.fitToViewport());
+        }
+        function showMap() {
+            const app = document.getElementById('main-app');
+            const panel = document.getElementById('stops-panel');
+            app.classList.add('map-expanded');
+            panel.style.removeProperty('display');
+            setNavActive('nav-map');
+            if (myMap) requestAnimationFrame(() => myMap.container.fitToViewport());
+        }
+        function setNavActive(id) {
+            document.querySelectorAll('#mobile-nav button').forEach(button => button.classList.toggle('active', button.id === id));
+        }
+        function openPlaceDetail(loc, routeId, dayNumber) {
+            const screen = document.getElementById('place-detail');
+            const content = document.getElementById('place-detail-content');
+            if (!screen || !content || !loc) return;
+            const routeNames = {'2-days':'Чемальская история','7-days':'Чуйский тракт','14-days':'Золотое кольцо Алтая'};
+            const cleanName = cleanStopName(loc.name);
+            const category = getStopCategory(loc);
+            const meta = [loc.time ? '⏱ ' + loc.time : '', loc.coords ? '📍 ' + loc.coords[0].toFixed(5) + ', ' + loc.coords[1].toFixed(5) : ''].filter(Boolean);
+            content.innerHTML = `
+                ${loc.photo ? `<div class="detail-hero"><img src="${loc.photo}" alt="${cleanName}" onerror="this.parentElement.classList.add('no-photo')"><span class="detail-hero-shade"></span><span class="detail-route">${routeNames[routeId] || 'Алтай Гайд'} · День ${dayNumber}</span></div>` : '<div class="detail-hero detail-hero-empty"><span>🏔️</span><span class="detail-route">' + (routeNames[routeId] || 'Алтай Гайд') + ' · День ' + dayNumber + '</span></div>'}
+                <div class="detail-body"><span class="detail-category">${category}</span><h1>${cleanName}</h1><p class="detail-description">${loc.desc || ''}</p>
+                ${meta.length ? `<div class="detail-facts">${meta.map(item => `<span>${item}</span>`).join('')}</div>` : ''}
+                ${loc.tips ? `<div class="detail-tip"><strong>Полезно знать</strong><p>${loc.tips}</p></div>` : ''}
+                <div class="detail-actions"><a href="${yandexUrl(loc)}" target="_blank" rel="noopener">Открыть в Яндекс Картах ↗</a>${loc.coords ? '<button type="button" id="detail-focus-map">Показать на карте</button>' : ''}</div></div>`;
+            screen.classList.add('open');
+            screen.setAttribute('aria-hidden','false');
+            document.body.classList.add('detail-open');
+            const focus = document.getElementById('detail-focus-map');
+            if (focus) focus.onclick = () => {
+                closePlaceDetail();
+                if (currentRouteId !== routeId) startApp(routeId, dayNumber);
+                else showDay(dayNumber);
+                setTimeout(() => {
+                    if (myMap && loc.coords) myMap.setCenter(loc.coords, 15, {duration:250});
+                    setNavActive('nav-map');
+                }, 250);
+            };
+        }
+        function closePlaceDetail() {
+            const screen = document.getElementById('place-detail');
+            if (screen) { screen.classList.remove('open'); screen.setAttribute('aria-hidden','true'); }
+            document.body.classList.remove('detail-open');
+        }
+
+        function openPhotoViewer(src, alt) {
+            const viewer = document.getElementById('photo-viewer');
+            const image = document.getElementById('photo-viewer-image');
+            if (!viewer || !image || !src) return;
+            image.src = src;
+            image.alt = alt || 'Фотография достопримечательности';
+            viewer.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closePhotoViewer(event) {
+            if (event && event.target && event.target.id === 'photo-viewer-image') return;
+            const viewer = document.getElementById('photo-viewer');
+            if (viewer) viewer.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        document.addEventListener('keydown', event => { if (event.key === 'Escape') { closePlaceDetail(); closePhotoViewer(); } });
+        function initMap() {
+            const mapElement = document.getElementById('map');
+            if (typeof ymaps === 'undefined' || !ymaps.Map) {
+                myMap = null;
+                mapElement.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;padding:28px;box-sizing:border-box;text-align:center;background:linear-gradient(145deg,#e7eee8,#d5e2d8);color:#315344;font:600 15px/1.6 Manrope,Arial,sans-serif"><div><div style="font-size:38px;margin-bottom:12px">🏔️</div><strong>Карта временно недоступна</strong><br><span style="font-size:12px;font-weight:400">Маршрут и все достопримечательности доступны в списке мест. Проверь подключение к интернету, чтобы загрузить карту.</span></div></div>';
+                renderDaySelector();
+                showDay(initialDayNumber);
+                return;
+            }
+            mapElement.innerHTML = '';
+            myMap = new ymaps.Map("map", { center: [51.8, 86.0], zoom: 8, controls: ['zoomControl'] });
+            renderDaySelector();
+            showDay(initialDayNumber);
+        }
+        function renderDaySelector() {
+            const selector = document.getElementById('day-selector');
+            selector.innerHTML = '';
+            currentRoute.days.forEach(d => {
+                const btn = document.createElement('button');
+                btn.innerText = `День ${d.day}`;
+                btn.className = 'day-btn';
+                btn.id = `btn-day-${d.day}`;
+                btn.onclick = () => showDay(d.day);
+                selector.appendChild(btn);
+            });
+        }
+
+        function closeInfo() { document.getElementById('route-info').style.display = 'none'; }
+
+        function yandexUrl(loc) {
+            if (loc.coords) {
+                const [lat, lon] = loc.coords;
+                return `https://yandex.ru/maps/?ll=${lon}%2C${lat}&z=16&pt=${lon}%2C${lat}`;
+            }
+            return `https://yandex.ru/maps/?text=${encodeURIComponent(loc.mapQuery || cleanStopName(loc.name))}`;
+        }
+
+        function getStopCategory(loc) {
+            const value = (cleanStopName(loc.name) + ' ' + (loc.desc || '')).toLowerCase();
+            if (/музе|петроглиф|курган|стел|изваяни|истор|памятник|мегалит|патмос|гэс/.test(value)) return 'История и культура';
+            if (/водопад|озер|река|катун|ущель|скал|гриб|перевал|степ|гора|панорам|смотров|урочище|долин/.test(value)) return 'Природа и панорамы';
+            if (/конн|лошад|хаски|олен|питомник|пещер|тропа|прогул|рафтинг/.test(value)) return 'Активный отдых';
+            if (/чай|ресторан|кафе|рынок|форел|обед|еда/.test(value)) return 'Вкус Алтая';
+            if (/база отдыха|отдых|курорт|отель|заселени/.test(value)) return 'Отдых';
+            return 'Остановка маршрута';
+        }
+
+        function renderStopCards(locations) {
+            const panel = document.getElementById('stops-panel');
+            const firstName = locations[0]?.name || '';
+            let panelTitle = 'Маршрут дня';
+            let panelMeta = locations.length + ' точек · маршрут по Горному Алтаю';
+            if (firstName.includes('Курорт Манжерок')) {
+                panelTitle = 'Первый день · Чемальская история';
+                panelMeta = '5 мест · от Манжерока до базы отдыха в Чемале';
+            } else if (firstName.includes('Остров Патмос')) {
+                panelTitle = 'Второй день · Красоты Чемальского тракта';
+                panelMeta = '8 мест · автомобильные переезды + пешие прогулки';
+            } else {
+                panelTitle = 'День ' + currentDayNumber + (currentRoute === routesData['14-days'] ? ' · Золотое кольцо Алтая' : ' · Чуйский тракт');
+            }
+            panel.classList.remove('is-collapsed');
+            panel.style.height = '';
+            panel.style.maxHeight = '';
+            const isDesktopPanel = window.matchMedia('(min-width: 900px)').matches;
+            panel.classList.remove('is-collapsed', 'is-dragging');
+            panel.style.height = '';
+            panel.style.maxHeight = '';
+            panel.style.removeProperty('--panel-height');
+            panel.style.overflow = '';
+            panel.innerHTML = '<div class="panel-head"><div class="panel-drag-handle" aria-hidden="true"><span></span></div><div class="panel-heading-copy"><h2>' + panelTitle + '</h2><div class="panel-meta">' + panelMeta + '</div></div><button class="panel-close" type="button" aria-label="Закрыть список мест" onclick="showMap()">×</button></div><div class="stops-list"></div>';
+            const listContainer = panel.querySelector('.stops-list');
+            const cardsFragment = document.createDocumentFragment();
+            const dragHandle = panel.querySelector('.panel-head');
+            if (!isDesktopPanel) {
+                let dragStartY = 0;
+                let dragStartHeight = 0;
+                let dragPointerId = null;
+                const maxPanelHeight = () => {
+                    const webAppHeight = Number(window.Telegram?.WebApp?.viewportStableHeight);
+                    const cssHeight = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-viewport-height'));
+                    const viewportHeight = webAppHeight || cssHeight || window.visualViewport?.height || window.innerHeight;
+                    return Math.max(220, Math.floor(viewportHeight * 0.82));
+                };
+                const setPanelHeight = height => {
+                    const bounded = Math.max(68, Math.min(maxPanelHeight(), Math.round(height)));
+                    panel.style.setProperty('--panel-height', bounded + 'px');
+                    return bounded;
+                };
+                const beginDrag = (clientY, pointerId) => {
+                    dragPointerId = pointerId;
+                    dragStartY = clientY;
+                    dragStartHeight = panel.getBoundingClientRect().height;
+                    panel.classList.remove('is-collapsed');
+                    panel.classList.add('is-dragging');
+                    panel.style.overflow = 'hidden';
+                    setPanelHeight(Math.max(76, dragStartHeight));
+                };
+                const moveDrag = (clientY, pointerId) => {
+                    if (dragPointerId !== pointerId) return;
+                    setPanelHeight(dragStartHeight + dragStartY - clientY);
+                };
+                const finishDrag = pointerId => {
+                    if (dragPointerId !== pointerId) return;
+                    const height = panel.getBoundingClientRect().height;
+                    panel.classList.remove('is-dragging');
+                    if (height <= 138) {
+                        panel.classList.add('is-collapsed');
+                        panel.style.setProperty('--panel-height', '68px');
+                        panel.style.overflow = 'hidden';
+                    } else {
+                        panel.classList.remove('is-collapsed');
+                        setPanelHeight(height);
+                        panel.style.overflowY = 'auto';
+                    }
+                    dragPointerId = null;
+                };
+
+                /* One Pointer Events path for touch, pen and mouse. Capture keeps
+                   move/up events arriving even when the finger leaves the header. */
+                dragHandle.addEventListener('pointerdown', event => {
+                    if (event.target.closest('.panel-close') || (event.pointerType === 'mouse' && event.button !== 0)) return;
+                    if (dragPointerId !== null) return;
+                    beginDrag(event.clientY, event.pointerId);
+                    try { dragHandle.setPointerCapture(event.pointerId); } catch (e) {}
+                    event.preventDefault();
+                });
+                dragHandle.addEventListener('pointermove', event => {
+                    if (dragPointerId !== event.pointerId) return;
+                    moveDrag(event.clientY, event.pointerId);
+                    event.preventDefault();
+                });
+                const finishPointer = event => finishDrag(event.pointerId);
+                dragHandle.addEventListener('pointerup', finishPointer);
+                dragHandle.addEventListener('pointercancel', finishPointer);
+                dragHandle.addEventListener('lostpointercapture', finishPointer);
+            }
+            if (firstName.includes('Остров Патмос')) {
+                const routeLinks = document.createElement('div');
+                routeLinks.className = 'stop-actions';
+                routeLinks.style.margin = '0 0 8px';
+                routeLinks.innerHTML = '<a href="https://yandex.ru/maps/?rtext=51.398380,86.000320~51.391080,86.004800&rtt=pd" target="_blank" rel="noopener">Пешком: Патмос → ГЭС ↗</a><a href="https://yandex.ru/maps/?rtext=51.261475,86.071725~51.122927,86.165701~50.960545,86.288532&rtt=auto" target="_blank" rel="noopener">На авто: Че-Чкыш → Бельтертуюк ↗</a>';
+                cardsFragment.appendChild(routeLinks);
+            }
+            locations.forEach((loc, index) => {
+                const card = document.createElement('article');
+                card.className = 'stop-card';
+                const image = loc.photo
+                    ? `<div class="stop-media"><img src="${loc.photo}" alt="${loc.name}" loading="lazy" decoding="async" fetchpriority="low" onerror="this.outerHTML='<div class=\\'stop-placeholder\\'>🏞️</div>'">${loc.photoPage ? `<a class="photo-credit" href="${loc.photoPage}" target="_blank" rel="noopener">Источник фото ↗</a>` : ''}</div>`
+                    : '<div class="stop-placeholder">🏞️</div>';
+                const coords = loc.coords ? `${loc.coords[0].toFixed(6)}, ${loc.coords[1].toFixed(6)}` : '';
+                const meta = [coords ? '📍 ' + coords : '', loc.time ? '⏱ ' + loc.time : ''].filter(Boolean).join(' · ');
+                const focusBtn = loc.coords ? '<button type="button" class="focus-stop">На карте</button>' : '';
+                const cleanName = cleanStopName(loc.name);
+                card.innerHTML = `${image}<div class="stop-details"><div class="stop-category">${getStopCategory(loc)}</div><h3 class="stop-title-trigger" role="button" tabindex="0" aria-label="Подробнее о месте: ${cleanName}">${index + 1}. ${cleanName}</h3><p class="stop-description">${loc.desc || ''}</p><button class="stop-more" type="button">Подробнее ↓</button><div class="stop-extra"><div class="stop-meta">${meta ? meta.split(' · ').map(item => `<span>${item}</span>`).join('') : ''}</div>${loc.tips ? `<div class="stop-tip"><strong>Полезно знать</strong><p>${loc.tips}</p></div>` : ''}</div><div class="stop-actions"><a href="${yandexUrl(loc)}" target="_blank" rel="noopener">Яндекс Карты ↗</a>${focusBtn}</div></div>`;
+                const openDetails = () => openPlaceDetail(loc, currentRouteId, currentDayNumber);
+                const detailTitle = card.querySelector('.stop-title-trigger');
+                if (detailTitle) {
+                    detailTitle.onclick = openDetails;
+                    detailTitle.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openDetails(); } };
+                }
+                const detailImage = card.querySelector('.stop-media img');
+                if (detailImage) detailImage.onclick = openDetails;
+                const more = card.querySelector('.stop-more');
+                if (more) more.onclick = () => {
+                    const expanded = card.classList.toggle('is-expanded');
+                    more.textContent = expanded ? 'Свернуть ↑' : 'Подробнее ↓';
+                };
+                const focus = card.querySelector('.focus-stop');
+                if (focus) focus.onclick = () => {
+                    if (!myMap) { setNavActive('nav-places'); return; }
+                    myMap.setCenter(loc.coords, 15, { duration: 250 });
+                    const marker = markers.find(m => {
+                        const p = m.geometry.getCoordinates();
+                        return p[0] === loc.coords[0] && p[1] === loc.coords[1];
+                    });
+                    if (marker) marker.balloon.open();
+                    setNavActive('nav-map');
+                };
+                cardsFragment.appendChild(card);
+            });
+            listContainer.appendChild(cardsFragment);
+        }
+
+        function showDay(dayNum) {
+            if (myMap && markers.length) myMap.geoObjects.removeAll();
+            markers = [];
+            document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+            const activeDayButton = document.getElementById(`btn-day-${dayNum}`);
+            if (activeDayButton) {
+                activeDayButton.classList.add('active');
+                activeDayButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+            try { localStorage.setItem('altay-last-trip', JSON.stringify({ routeId: currentRouteId, day: dayNum })); } catch (e) {}
+            setNavActive(document.getElementById('main-app').classList.contains('map-expanded') ? 'nav-map' : 'nav-places');
+
+            
+            const infoBox = document.getElementById('route-info');
+            const infoContent = document.getElementById('info-content');
+            if (currentRoute.info && currentRoute.info[dayNum]) {
+                infoContent.innerText = currentRoute.info[dayNum];
+                infoBox.style.display = 'block';
+            } else {
+                infoBox.style.display = 'none';
+            }
+
+            const dayData = currentRoute.days.find(d => d.day === dayNum);
+            currentDayNumber = dayNum;
+            const stopsPanel = document.getElementById('stops-panel');
+            if (currentRoute === routesData['2-days'] || currentRoute === routesData['7-days'] || currentRoute === routesData['14-days']) {
+                stopsPanel.style.display = 'block';
+                renderStopCards(dayData.locations);
+            } else {
+                stopsPanel.style.display = 'none';
+                stopsPanel.innerHTML = '';
+            }
+            if (myMap && typeof ymaps !== 'undefined') {
+            const markerCollection = new ymaps.GeoObjectCollection();
+            dayData.locations.forEach((loc, index) => {
+                
+                if (!loc.coords) return;
+                const myPlacemark = new ymaps.Placemark(loc.coords, {
+                    balloonContentHeader: `<b style="color:#2c3e50">${cleanStopName(loc.name)}</b>`,
+                    balloonContentBody: `<div style="font-family:sans-serif; font-size:13px">${loc.desc}<br><br>${loc.time ? '<b>Время: ' + loc.time + '</b><br>' : ''}<a href="${yandexUrl(loc)}" target="_blank">Открыть в Яндекс Картах</a></div>`
+                }, {
+                    
+                    preset: 'islands#blueCircleIcon' 
+                });
+
+                
+                
+                
+                
+                markerCollection.add(myPlacemark);
+                markers.push(myPlacemark);
+                (loc.extraCoords || []).forEach(extra => {
+                    const subMarker = new ymaps.Placemark(extra.coords, {
+                        balloonContentHeader: extra.label,
+                        balloonContentBody: 'Дополнительная точка локации'
+                    }, { preset: 'islands#orangeCircleDotIcon' });
+                    markerCollection.add(subMarker);
+                    markers.push(subMarker);
+                });
+            });
+
+            if (markers.length > 0) {
+                myMap.geoObjects.add(markerCollection);
+                const bounds = markerCollection.getBounds();
+                if (bounds) myMap.setBounds(bounds, { checkZoomRange: true, zoomMargin: 35 });
+                else if (dayData.locations[0].coords) myMap.setCenter(dayData.locations[0].coords, 11);
+            }
+            }
+        }
+        updateResumeButton();
+
+    </script>
+</body>
+</html>
+
