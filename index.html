@@ -591,6 +591,27 @@
                 button.setAttribute('aria-label', saved ? 'Убрать из избранного' : 'Добавить в избранное');
             }
         }
+        function openFavoriteDay(item) {
+            if (!item || !routesData[item.routeId]) return;
+            if (myMap && currentRouteId === item.routeId) {
+                showDay(item.day);
+                return;
+            }
+            if (myMap) {
+                try { myMap.destroy(); } catch (e) {}
+                myMap = null;
+            }
+            currentRouteId = item.routeId;
+            currentRoute = routesData[item.routeId];
+            initialDayNumber = item.day || 1;
+            markers = [];
+            document.getElementById('stops-panel').style.display = 'block';
+            document.getElementById('route-info').style.display = 'none';
+            renderDaySelector();
+            myMap = new ymaps.Map("map", { center: [51.8, 86.0], zoom: 8, controls: ['zoomControl'] });
+            showDay(initialDayNumber);
+        }
+
         function showFavorites() {
             const panel = document.getElementById('stops-panel');
             const favorites = getFavorites();
@@ -617,13 +638,7 @@
                     updateFavoriteCount();
                     showFavorites();
                 };
-                card.querySelector('.open-favorite').onclick = () => {
-                    if (currentRouteId === item.routeId && currentDayNumber === item.day && myMap) {
-                        showDay(item.day);
-                    } else {
-                        startApp(item.routeId, item.day);
-                    }
-                };
+                card.querySelector('.open-favorite').onclick = () => openFavoriteDay(item);
                 panel.appendChild(card);
             });
         }
@@ -803,6 +818,7 @@
             }
         }
         updateResumeButton();
+        updateFavoriteCount();
 
     </script>
 </body>
