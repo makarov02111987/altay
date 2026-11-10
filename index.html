@@ -414,6 +414,31 @@
             #mobile-nav{bottom:18px}
         }
 
+
+        /* Android/mobile rendering: сохраняем Liquid Glass, уменьшаем стоимость blur */
+        @media (max-width: 600px) {
+            #mobile-nav {
+                -webkit-backdrop-filter: blur(11px) saturate(125%);
+                backdrop-filter: blur(11px) saturate(125%);
+                box-shadow: inset 0 1px 0 rgba(255,255,255,.24), 0 10px 28px rgba(0,0,0,.24);
+            }
+            #day-selector, .route-card, #back-btn {
+                -webkit-backdrop-filter: blur(10px) saturate(125%) !important;
+                backdrop-filter: blur(10px) saturate(125%) !important;
+            }
+            .stop-actions a, .stop-actions button,
+            #stops-panel .panel-head {
+                -webkit-backdrop-filter: blur(8px);
+                backdrop-filter: blur(8px);
+            }
+            #photo-viewer {
+                -webkit-backdrop-filter: blur(10px);
+                backdrop-filter: blur(10px);
+            }
+            .route-card, #day-selector, #back-btn {
+                box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 8px 22px rgba(0,0,0,.16) !important;
+            }
+        }
     </style>
 </head>
 <body>
