@@ -208,7 +208,7 @@
             locations.forEach((loc) => {
                 const card = document.createElement('article');
                 card.className = 'stop-card';
-                const image = loc.photo ? `<img src="${loc.photo}" alt="${loc.name}" loading="lazy" onerror="this.outerHTML='<div class=\\'stop-placeholder\\'>🏞️</div>'">${loc.photoPage ? `<a class="photo-credit" href="${loc.photoPage}" target="_blank" rel="noopener">Источник фото ↗</a>` : ''}` : '<div class="stop-placeholder">🏞️</div>';
+                const image = loc.photo ? `<div class="stop-media"><img src="${loc.photo}" alt="${loc.name}" loading="lazy" onerror="this.outerHTML='<div class=\\'stop-placeholder\\'>🏞️</div>'">${loc.photoPage ? `<a class="photo-credit" href="${loc.photoPage}" target="_blank" rel="noopener">Источник фото ↗</a>` : ''}</div>` : '<div class="stop-placeholder">🏞️</div>';
                 const coords = loc.coords ? `${loc.coords[0].toFixed(6)}, ${loc.coords[1].toFixed(6)}` : 'Координаты уточняются';
                 const extra = loc.verification ? `<p class="verify-note">⚠ ${loc.verification}</p>` : '';
                 const focusBtn = loc.coords ? '<button type="button">На карте</button>' : '';
