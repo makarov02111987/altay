@@ -255,6 +255,43 @@
         @media(max-width:380px){#stops-panel{max-height:40dvh}.stop-card{grid-template-columns:70px minmax(0,1fr)}.stop-card img,.stop-placeholder{width:70px;height:70px}}
         @media(prefers-reduced-transparency:reduce){#mobile-nav,#photo-viewer{backdrop-filter:none;-webkit-backdrop-filter:none}#mobile-nav{background:rgba(20,43,38,.96)}}
 
+
+        /* Premium finish + favorites */
+        #mobile-nav{width:min(440px,calc(100% - 20px));gap:4px;padding:7px;border-radius:24px;background:linear-gradient(145deg,rgba(13,35,30,.82),rgba(27,61,51,.68));border-color:rgba(235,247,238,.36);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 16px 44px rgba(0,0,0,.3)}
+        #mobile-nav button{position:relative;min-height:50px;border-radius:17px;font-size:10px;letter-spacing:.1px}
+        #mobile-nav button .nav-icon{font-size:19px}
+        #mobile-nav button.active{background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(224,239,228,.88));color:#17382f;box-shadow:inset 0 1px 0 #fff,0 5px 16px rgba(0,0,0,.18)}
+        #favorite-count{display:inline-grid;place-items:center;min-width:15px;height:15px;margin-left:2px;padding:0 3px;border-radius:20px;background:rgba(255,255,255,.2);font-size:9px;font-weight:800}
+        #mobile-nav button.active #favorite-count{background:#dcebe0;color:#244c3c}
+        .stop-card{position:relative;border-top-color:rgba(34,76,59,.13)}
+        .stop-card h3{padding-right:34px;line-height:1.3}
+        .favorite-toggle{position:absolute;top:12px;right:0;width:32px;height:32px;display:grid;place-items:center;border:1px solid rgba(45,91,69,.14);border-radius:50%;background:rgba(235,244,237,.82);color:#587766;font-size:18px;line-height:1;cursor:pointer;box-shadow:0 3px 10px rgba(24,60,43,.08);transition:transform .2s ease,background .2s ease,color .2s ease}
+        .favorite-toggle:active{transform:scale(.9)}
+        .favorite-toggle.saved{background:linear-gradient(145deg,#e9f5eb,#cfe7d5);color:#b64e57;border-color:rgba(182,78,87,.2)}
+        .favorite-card{position:relative;padding:14px 0}
+        .favorite-card .favorite-remove{position:absolute;top:12px;right:0;width:30px;height:30px;border:1px solid rgba(182,78,87,.18);border-radius:50%;background:#fff2f1;color:#a94e53;font-size:17px;cursor:pointer}
+        .favorite-card h3{padding-right:34px}
+        .favorites-empty{padding:28px 16px;text-align:center;border:1px dashed rgba(50,94,71,.25);border-radius:18px;background:linear-gradient(145deg,rgba(235,244,237,.72),rgba(255,255,255,.5));color:#567365}
+        .favorites-empty .empty-icon{font-size:32px;margin-bottom:8px}
+        .favorites-empty strong{display:block;color:#234b3b;font-size:14px;margin-bottom:5px}
+        .favorites-empty p{margin:0;font-size:11px;line-height:1.5}
+        #stops-panel{border:1px solid rgba(255,255,255,.7);box-shadow:0 16px 48px rgba(11,40,28,.2),inset 0 1px 0 rgba(255,255,255,.9);background:linear-gradient(145deg,rgba(252,254,252,.97),rgba(235,243,237,.94))}
+        #stops-panel .panel-head{border-bottom:1px solid rgba(37,78,57,.1)}
+        #stops-panel h2{letter-spacing:-.45px;font-weight:800}
+        .stop-actions a,.stop-actions button{border-radius:12px;min-height:38px;padding:9px 12px;transition:transform .18s ease,filter .18s ease}
+        .stop-actions a:active,.stop-actions button:active{transform:scale(.97);filter:brightness(.96)}
+        .route-card{position:relative;overflow:hidden;border-radius:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.48),0 18px 44px rgba(0,0,0,.22)!important}
+        .route-card:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.15),transparent 42%,rgba(255,255,255,.04))}
+        .route-icon{border-radius:17px!important}
+        .home-intro h1{letter-spacing:-2.4px}
+        .eyebrow{display:inline-flex;align-items:center;gap:8px}
+        .eyebrow:before{content:"";width:20px;height:1px;background:#b9dfc7}
+        #day-selector{border-radius:18px!important;padding:7px!important}
+        .day-btn{border-radius:13px!important;transition:background .2s ease,transform .2s ease}
+        .day-btn:active{transform:scale(.96)}
+        #route-info{border:1px solid rgba(255,255,255,.65);box-shadow:0 16px 42px rgba(13,43,31,.2),inset 0 1px 0 rgba(255,255,255,.9)}
+        @media(max-width:600px){#mobile-nav{width:calc(100% - 16px);bottom:calc(7px + env(safe-area-inset-bottom));padding:6px}#mobile-nav button{min-height:47px;font-size:9px;gap:2px}#mobile-nav button .nav-icon{font-size:18px}.favorite-toggle{top:10px;width:30px;height:30px}}
+
     </style>
 </head>
 <body>
@@ -296,6 +333,7 @@
         <nav id="mobile-nav" aria-label="Навигация по приложению">
             <button id="nav-places" class="active" type="button" onclick="showPlaces()"><span class="nav-icon">☷</span><span>Места</span></button>
             <button id="nav-map" type="button" onclick="showMap()"><span class="nav-icon">⌖</span><span>Карта</span></button>
+            <button id="nav-favorites" type="button" onclick="showFavorites()"><span class="nav-icon">♡</span><span>Избранное <small id="favorite-count">0</small></span></button>
             <button id="nav-home" type="button" onclick="goHome()"><span class="nav-icon">⌂</span><span>Маршруты</span></button>
         </nav>
     </div>
@@ -513,6 +551,83 @@
             if (saved && routesData[saved.routeId]) startApp(saved.routeId, saved.day || 1);
         }
         function goHome() { location.reload(); }
+        function getFavorites() {
+            try { return JSON.parse(localStorage.getItem('altay-favorites') || '[]'); } catch (e) { return []; }
+        }
+        function favoriteKey(item) { return [item.routeId, item.day, item.name].join('|'); }
+        function isFavorite(loc) {
+            const key = favoriteKey({ routeId: currentRouteId, day: currentDayNumber, name: (loc.name || '').replace(/^\\d+\\.\\s*/, '') });
+            return getFavorites().some(item => favoriteKey(item) === key);
+        }
+        function updateFavoriteCount() {
+            const count = getFavorites().length;
+            const badge = document.getElementById('favorite-count');
+            if (badge) badge.textContent = count;
+        }
+        function toggleFavorite(loc) {
+            const item = {
+                routeId: currentRouteId,
+                day: currentDayNumber,
+                name: (loc.name || '').replace(/^\\d+\\.\\s*/, ''),
+                desc: loc.desc || '',
+                tips: loc.tips || '',
+                time: loc.time || '',
+                coords: loc.coords || null,
+                photo: loc.photo || '',
+                photoPage: loc.photoPage || ''
+            };
+            const favorites = getFavorites();
+            const key = favoriteKey(item);
+            const index = favorites.findIndex(saved => favoriteKey(saved) === key);
+            if (index >= 0) favorites.splice(index, 1);
+            else favorites.push(item);
+            try { localStorage.setItem('altay-favorites', JSON.stringify(favorites)); } catch (e) {}
+            updateFavoriteCount();
+            const button = [...document.querySelectorAll('.favorite-toggle')].find(btn => btn.dataset.favoriteKey === key);
+            if (button) {
+                const saved = index < 0;
+                button.classList.toggle('saved', saved);
+                button.textContent = saved ? '♥' : '♡';
+                button.setAttribute('aria-label', saved ? 'Убрать из избранного' : 'Добавить в избранное');
+            }
+        }
+        function showFavorites() {
+            const panel = document.getElementById('stops-panel');
+            const favorites = getFavorites();
+            panel.style.display = 'block';
+            panel.scrollTop = 0;
+            setNavActive('nav-favorites');
+            panel.innerHTML = '<div class="panel-head"><div><h2>Избранные места</h2><div class="panel-meta">' + favorites.length + ' сохранённых ' + (favorites.length === 1 ? 'место' : 'мест') + '</div></div><span>♥</span></div>';
+            if (!favorites.length) {
+                panel.innerHTML += '<div class="favorites-empty"><div class="empty-icon">♡</div><strong>Здесь будут твои любимые места</strong><p>Нажимай на сердечко в карточках достопримечательностей, чтобы сохранить интересные точки маршрута.</p></div>';
+                return;
+            }
+            favorites.forEach((item, index) => {
+                const card = document.createElement('article');
+                card.className = 'stop-card favorite-card';
+                const image = item.photo
+                    ? '<div class="stop-media"><img src="' + item.photo + '" alt="' + item.name + '" loading="lazy" onclick="openPhotoViewer(this.src,this.alt)"></div>'
+                    : '<div class="stop-placeholder">🏞️</div>';
+                const routeTitle = item.routeId === '2-days' ? 'Чемальская история' : item.routeId === '7-days' ? 'Чуйский тракт' : 'Золотое кольцо Алтая';
+                card.innerHTML = image + '<div class="stop-details"><h3>' + item.name + '</h3><p class="stop-description">' + (item.desc || '') + '</p><div class="coords">' + routeTitle + ' · День ' + item.day + '</div><div class="stop-actions"><button type="button" class="open-favorite">Открыть день ↗</button>' + (item.coords ? '<a href="https://yandex.ru/maps/?pt=' + item.coords[1] + ',' + item.coords[0] + '&z=15&l=map" target="_blank" rel="noopener">Яндекс Карты ↗</a>' : '') + '</div></div><button class="favorite-remove" type="button" aria-label="Удалить из избранного">×</button>';
+                card.querySelector('.favorite-remove').onclick = () => {
+                    const latest = getFavorites();
+                    latest.splice(latest.findIndex(saved => favoriteKey(saved) === favoriteKey(item)), 1);
+                    try { localStorage.setItem('altay-favorites', JSON.stringify(latest)); } catch (e) {}
+                    updateFavoriteCount();
+                    showFavorites();
+                };
+                card.querySelector('.open-favorite').onclick = () => {
+                    if (currentRouteId === item.routeId && currentDayNumber === item.day && myMap) {
+                        showDay(item.day);
+                    } else {
+                        startApp(item.routeId, item.day);
+                    }
+                };
+                panel.appendChild(card);
+            });
+        }
+
         function showPlaces() {
             const panel = document.getElementById('stops-panel');
             panel.style.display = 'block';
@@ -599,7 +714,9 @@
                 const extra = loc.verification ? `<p class="verify-note">⚠ ${loc.verification}</p>` : '';
                 const focusBtn = loc.coords ? '<button type="button" class="focus-stop">На карте</button>' : '';
                 const cleanName = loc.name.replace(/^\\d+\\.\\s*/, '');
-                card.innerHTML = `${image}<div class="stop-details"><h3>${index + 1}. ${cleanName}</h3><p class="stop-description">${loc.desc || ''}</p><button class="stop-more" type="button">Подробнее ↓</button><div class="coords">📍 ${coords} · ⏱ ${loc.time || 'время уточняется'}</div><p>${loc.tips || ''}</p>${extra}<div class="stop-actions"><a href="${yandexUrl(loc)}" target="_blank" rel="noopener">Яндекс Карты ↗</a>${focusBtn}</div></div>`;
+                card.innerHTML = `${image}<div class="stop-details"><h3>${index + 1}. ${cleanName}</h3><button type="button" class="favorite-toggle ${isFavorite(loc) ? 'saved' : ''}" data-favorite-key="${favoriteKey({ routeId: currentRouteId, day: currentDayNumber, name: cleanName })}" aria-label="${isFavorite(loc) ? 'Убрать из избранного' : 'Добавить в избранное'}">${isFavorite(loc) ? '♥' : '♡'}</button><p class="stop-description">${loc.desc || ''}</p><button class="stop-more" type="button">Подробнее ↓</button><div class="coords">📍 ${coords} · ⏱ ${loc.time || 'время уточняется'}</div><p>${loc.tips || ''}</p>${extra}<div class="stop-actions"><a href="${yandexUrl(loc)}" target="_blank" rel="noopener">Яндекс Карты ↗</a>${focusBtn}</div></div>`;
+                const favoriteButton = card.querySelector('.favorite-toggle');
+                if (favoriteButton) favoriteButton.onclick = () => toggleFavorite(loc);
                 const more = card.querySelector('.stop-more');
                 if (more) more.onclick = () => {
                     const expanded = card.classList.toggle('is-expanded');
