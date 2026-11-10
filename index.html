@@ -84,6 +84,16 @@
         #stops-panel.is-collapsed{height:auto;max-height:76px;overflow:hidden}
         #stops-panel.is-collapsed>:not(.panel-head){display:none!important}
         #stops-panel.is-collapsed .panel-head{margin-bottom:0}
+        #stops-panel .panel-view-toggle{flex:0 0 auto;min-height:36px;padding:0 12px;border:1px solid rgba(36,76,61,.14);border-radius:13px;background:rgba(255,255,255,.76);color:#245342;font:700 11px inherit;cursor:pointer}
+        #stops-panel .panel-view-toggle[aria-pressed=true]{background:#244d3d;color:#fff}
+        #stops-panel .stops-gallery{display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:4px 0 12px}
+        #stops-panel.gallery-mode .stops-list{display:none}
+        #stops-panel.gallery-mode .stops-gallery{display:grid}
+        #stops-panel .gallery-tile{position:relative;min-width:0;aspect-ratio:1.12;border:0;padding:0;overflow:hidden;border-radius:15px;background:#dce9e2;text-align:left;cursor:pointer;box-shadow:0 5px 16px rgba(20,55,42,.12)}
+        #stops-panel .gallery-tile img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s}
+        #stops-panel .gallery-tile:active img{transform:scale(1.04)}
+        #stops-panel .gallery-tile span{position:absolute;inset:auto 0 0;padding:24px 9px 9px;background:linear-gradient(transparent,rgba(8,28,22,.82));color:#fff;font-size:11px;font-weight:800;line-height:1.25}
+        #stops-panel.is-collapsed .panel-head{margin-bottom:0}
         @media(max-width:600px){#stops-panel .panel-collapse{min-height:34px;padding:0 11px;font-size:10px}#stops-panel.is-collapsed{max-height:72px}}
         .stop-card { display:grid; grid-template-columns:92px 1fr; gap:11px; padding:9px 0; border-top:1px solid #e8eeea; }
         .stop-card img,.stop-placeholder { width:92px; height:92px; object-fit:cover; border-radius:13px; background:#dce9e2; }
@@ -758,7 +768,23 @@
                     showFavorites();
                 };
                 card.querySelector('.open-favorite').onclick = () => openFavoriteDay(item);
-                panel.appendChild(card);
+                listContainer.appendChild(card);
+                if (loc.photo) {
+                    const tile = document.createElement('button');
+                    tile.type = 'button';
+                    tile.className = 'gallery-tile';
+                    tile.setAttribute('aria-label', 'Подробнее: ' + cleanName);
+                    const tileImage = document.createElement('img');
+                    tileImage.src = loc.photo;
+                    tileImage.alt = cleanName;
+                    tileImage.loading = 'lazy';
+                    tileImage.onerror = () => { tileImage.style.display = 'none'; };
+                    const tileTitle = document.createElement('span');
+                    tileTitle.textContent = cleanName;
+                    tile.append(tileImage, tileTitle);
+                    tile.onclick = openDetails;
+                    galleryContainer.appendChild(tile);
+                }
             });
         }
 
@@ -881,7 +907,16 @@
             panel.classList.remove('is-collapsed');
             panel.style.height = '';
             panel.style.maxHeight = '';
-            panel.innerHTML = '<div class="panel-head"><div class="panel-drag-handle" role="separator" aria-orientation="horizontal" aria-label="Потяните вверх или вниз, чтобы изменить высоту списка"><span></span></div><div><h2>' + panelTitle + '</h2><div class="panel-meta">' + panelMeta + '</div></div><button class="panel-collapse" type="button" aria-expanded="true" aria-label="Свернуть список мест" title="Свернуть список мест"><span class="collapse-label">Свернуть</span><span class="collapse-chevron">⌄</span></button></div>';
+            panel.classList.remove('gallery-mode');
+            panel.innerHTML = '<div class="panel-head"><div class="panel-drag-handle" role="separator" aria-orientation="horizontal" aria-label="Потяните вверх или вниз, чтобы изменить высоту списка"><span></span></div><div><h2>' + panelTitle + '</h2><div class="panel-meta">' + panelMeta + '</div></div><button class="panel-view-toggle" type="button" aria-pressed="false">▦ Галерея</button><button class="panel-collapse" type="button" aria-expanded="true" aria-label="Свернуть список мест" title="Свернуть список мест"><span class="collapse-label">Свернуть</span><span class="collapse-chevron">⌄</span></button></div><div class="stops-list"></div><div class="stops-gallery" aria-label="Фотографии достопримечательностей"></div>';
+            const listContainer = panel.querySelector('.stops-list');
+            const galleryContainer = panel.querySelector('.stops-gallery');
+            const viewToggle = panel.querySelector('.panel-view-toggle');
+            viewToggle.onclick = () => {
+                const galleryMode = panel.classList.toggle('gallery-mode');
+                viewToggle.setAttribute('aria-pressed', String(galleryMode));
+                viewToggle.textContent = galleryMode ? '☷ Список' : '▦ Галерея';
+            };
             const collapseButton = panel.querySelector('.panel-collapse');
             const dragHandle = panel.querySelector('.panel-drag-handle');
             let dragStartY = 0;
@@ -931,6 +966,9 @@
             dragHandle.onpointercancel = finishPanelDrag;
             collapseButton.onclick = () => {
                 const collapsed = panel.classList.toggle('is-collapsed');
+                panel.style.height = collapsed ? '72px' : '';
+                panel.style.maxHeight = collapsed ? '72px' : '';
+                panel.style.overflow = collapsed ? 'hidden' : '';
                 collapseButton.setAttribute('aria-expanded', String(!collapsed));
                 collapseButton.setAttribute('aria-label', collapsed ? 'Развернуть список мест' : 'Свернуть список мест');
                 collapseButton.title = collapsed ? 'Развернуть список мест' : 'Свернуть список мест';
