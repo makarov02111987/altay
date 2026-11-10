@@ -84,15 +84,6 @@
         #stops-panel.is-collapsed{height:auto;max-height:76px;overflow:hidden}
         #stops-panel.is-collapsed>:not(.panel-head){display:none!important}
         #stops-panel.is-collapsed .panel-head{margin-bottom:0}
-        #stops-panel .panel-view-toggle{flex:0 0 auto;min-height:36px;padding:0 12px;border:1px solid rgba(36,76,61,.14);border-radius:13px;background:rgba(255,255,255,.76);color:#245342;font:700 11px inherit;cursor:pointer}
-        #stops-panel .panel-view-toggle[aria-pressed=true]{background:#244d3d;color:#fff}
-        #stops-panel .stops-gallery{display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:4px 0 12px}
-        #stops-panel.gallery-mode .stops-list{display:none}
-        #stops-panel.gallery-mode .stops-gallery{display:grid}
-        #stops-panel .gallery-tile{position:relative;min-width:0;aspect-ratio:1.12;border:0;padding:0;overflow:hidden;border-radius:15px;background:#dce9e2;text-align:left;cursor:pointer;box-shadow:0 5px 16px rgba(20,55,42,.12)}
-        #stops-panel .gallery-tile img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s}
-        #stops-panel .gallery-tile:active img{transform:scale(1.04)}
-        #stops-panel .gallery-tile span{position:absolute;inset:auto 0 0;padding:24px 9px 9px;background:linear-gradient(transparent,rgba(8,28,22,.82));color:#fff;font-size:11px;font-weight:800;line-height:1.25}
         #stops-panel.is-collapsed .panel-head{margin-bottom:0}
         @media(max-width:600px){#stops-panel .panel-collapse{min-height:34px;padding:0 11px;font-size:10px}#stops-panel.is-collapsed{max-height:72px}}
         .stop-card { display:grid; grid-template-columns:92px 1fr; gap:11px; padding:9px 0; border-top:1px solid #e8eeea; }
@@ -246,11 +237,16 @@
 
 
         /* Мобильная навигация и обновлённые карточки остановок */
-        #mobile-nav{position:absolute;z-index:30;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:5px;width:min(390px,calc(100% - 24px));padding:7px;border:1px solid rgba(255,255,255,.42);border-radius:22px;background:rgba(20,43,38,.62);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 12px 34px rgba(0,0,0,.24);backdrop-filter:blur(26px) saturate(165%);-webkit-backdrop-filter:blur(26px) saturate(165%)}
-        #mobile-nav button{flex:1;min-width:0;min-height:48px;border:0;border-radius:16px;background:transparent;color:rgba(255,255,255,.82);font-family:inherit;font-size:11px;font-weight:600;line-height:1.2;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;touch-action:manipulation;transition:background .2s ease,color .2s ease}
+        #mobile-nav{position:absolute;z-index:30;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:6px;width:min(390px,calc(100% - 24px));padding:7px;border:1px solid rgba(255,255,255,.48);border-radius:23px;background:linear-gradient(145deg,rgba(255,255,255,.24),rgba(18,43,36,.68));box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 14px 38px rgba(0,0,0,.28);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%)}
+        #mobile-nav button{flex:1;min-width:0;min-height:49px;border:1px solid rgba(255,255,255,.12);border-radius:17px;background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.015));color:rgba(255,255,255,.88);font-family:inherit;font-size:11px;font-weight:650;line-height:1.2;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;touch-action:manipulation;transition:background .22s ease,color .22s ease,box-shadow .22s ease,border-color .22s ease}
         #mobile-nav button .nav-icon{font-size:18px;line-height:1}
-        #mobile-nav button.active{background:rgba(255,255,255,.88);color:#17382f;box-shadow:inset 0 1px 0 #fff,0 3px 12px rgba(0,0,0,.14)}
-        #stops-panel{bottom:calc(78px + env(safe-area-inset-bottom));max-height:min(48vh,440px);scroll-behavior:smooth}
+        #mobile-nav button.active{border-color:rgba(255,255,255,.62);background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(221,239,228,.82));color:#17382f;box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 4px 16px rgba(0,0,0,.18)}
+        #mobile-nav button:active{transform:scale(.97)}
+        #stops-panel{bottom:calc(78px + env(safe-area-inset-bottom));max-height:min(48vh,440px);scroll-behavior:smooth;touch-action:pan-y;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+        #stops-panel .stops-list{touch-action:pan-y;overscroll-behavior-y:contain}
+        [class*="balloon__layout"]{box-sizing:border-box!important;width:min(320px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important}
+        [class*="balloon__content"]{box-sizing:border-box!important;max-width:100%!important;overflow-wrap:anywhere}
+        [class*="balloon__content"] img,[class*="balloon__content"] iframe{max-width:100%!important}
         #stops-panel .panel-head{position:sticky;top:-11px;z-index:2;padding:9px 2px 10px;margin:0 0 7px;background:rgba(247,250,247,.94);backdrop-filter:blur(14px)}
         #stops-panel .panel-head{position:sticky}
         #stops-panel .panel-drag-handle{position:absolute;top:3px;left:50%;z-index:4;transform:translateX(-50%);width:64px;height:16px;display:flex;align-items:center;justify-content:center;cursor:ns-resize;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -653,6 +649,12 @@
         let currentRouteId = null;
         let initialDayNumber = 1;
         function startApp(routeId, dayNum = 1) {
+            try {
+                if (window.Telegram && Telegram.WebApp) {
+                    Telegram.WebApp.ready();
+                    if (typeof Telegram.WebApp.disableVerticalSwipes === 'function') Telegram.WebApp.disableVerticalSwipes();
+                }
+            } catch (e) {}
             currentRouteId = routeId;
             currentRoute = routesData[routeId];
             initialDayNumber = dayNum;
@@ -908,15 +910,8 @@
             panel.style.height = '';
             panel.style.maxHeight = '';
             panel.classList.remove('gallery-mode');
-            panel.innerHTML = '<div class="panel-head"><div class="panel-drag-handle" role="separator" aria-orientation="horizontal" aria-label="Потяните вверх или вниз, чтобы изменить высоту списка"><span></span></div><div><h2>' + panelTitle + '</h2><div class="panel-meta">' + panelMeta + '</div></div><button class="panel-view-toggle" type="button" aria-pressed="false">▦ Галерея</button><button class="panel-collapse" type="button" aria-expanded="true" aria-label="Свернуть список мест" title="Свернуть список мест"><span class="collapse-label">Свернуть</span><span class="collapse-chevron">⌄</span></button></div><div class="stops-list"></div><div class="stops-gallery" aria-label="Фотографии достопримечательностей"></div>';
+            panel.innerHTML = '<div class="panel-head"><div class="panel-drag-handle" role="separator" aria-orientation="horizontal" aria-label="Потяните вверх или вниз, чтобы изменить высоту списка"><span></span></div><div><h2>' + panelTitle + '</h2><div class="panel-meta">' + panelMeta + '</div></div><button class="panel-collapse" type="button" aria-expanded="true" aria-label="Свернуть список мест" title="Свернуть список мест"><span class="collapse-label">Свернуть</span><span class="collapse-chevron">⌄</span></button></div><div class="stops-list"></div>';
             const listContainer = panel.querySelector('.stops-list');
-            const galleryContainer = panel.querySelector('.stops-gallery');
-            const viewToggle = panel.querySelector('.panel-view-toggle');
-            viewToggle.onclick = () => {
-                const galleryMode = panel.classList.toggle('gallery-mode');
-                viewToggle.setAttribute('aria-pressed', String(galleryMode));
-                viewToggle.textContent = galleryMode ? '☷ Список' : '▦ Галерея';
-            };
             const collapseButton = panel.querySelector('.panel-collapse');
             const dragHandle = panel.querySelector('.panel-drag-handle');
             let dragStartY = 0;
@@ -926,6 +921,7 @@
             dragHandle.onpointerdown = event => {
                 if (event.button !== undefined && event.button !== 0) return;
                 event.preventDefault();
+                event.stopPropagation();
                 dragPointerId = event.pointerId;
                 dragStartY = event.clientY;
                 dragStartHeight = panel.getBoundingClientRect().height;
@@ -1020,22 +1016,6 @@
                     setNavActive('nav-map');
                 };
                 listContainer.appendChild(card);
-                if (loc.photo) {
-                    const tile = document.createElement('button');
-                    tile.type = 'button';
-                    tile.className = 'gallery-tile';
-                    tile.setAttribute('aria-label', 'Подробнее: ' + cleanName);
-                    const tileImage = document.createElement('img');
-                    tileImage.src = loc.photo;
-                    tileImage.alt = cleanName;
-                    tileImage.loading = 'lazy';
-                    tileImage.onerror = () => { tileImage.style.display = 'none'; };
-                    const tileTitle = document.createElement('span');
-                    tileTitle.textContent = cleanName;
-                    tile.append(tileImage, tileTitle);
-                    tile.onclick = openDetails;
-                    galleryContainer.appendChild(tile);
-                }
             });
         }
 
