@@ -97,21 +97,118 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; 
             display: flex; align-items: center; justify-content: center; font-size: 20px; border: none;
         }
+
+        /* Обновлённый интерфейс: главная и адаптация под телефон */
+        #setup-screen {
+            min-height:100vh; min-height:100dvh; height:auto; overflow-y:auto; justify-content:center;
+            padding:clamp(22px,5vh,56px) 20px;
+            background:
+              linear-gradient(115deg,rgba(7,24,22,.88),rgba(10,35,31,.66) 48%,rgba(5,20,19,.82)),
+              url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1800&q=88') center/cover fixed;
+        }
+        .home-content { width:min(100%,760px); margin:auto; text-align:left; }
+        .home-brand { display:flex; align-items:center; gap:9px; color:#fff; font-size:13px; letter-spacing:2px; font-weight:500; }
+        .home-brand b { color:#b9dfc7; font-weight:800; }
+        .brand-mark { display:grid; place-items:center; width:38px; height:38px; border:1px solid rgba(255,255,255,.3); border-radius:13px; background:rgba(255,255,255,.12); font-size:20px; }
+        .brand-dot { width:5px; height:5px; border-radius:50%; background:#b9dfc7; margin-left:2px; }
+        .home-brand small { margin-left:auto; font-size:9px; letter-spacing:1.4px; color:rgba(255,255,255,.62); }
+        .home-intro { max-width:620px; margin:clamp(34px,7vh,66px) 0 30px; }
+        .eyebrow { color:#b9dfc7; font-size:10px; font-weight:800; letter-spacing:2px; }
+        .home-intro h1 { margin:12px 0 12px; font-size:clamp(36px,7vw,62px); line-height:1.02; letter-spacing:-2px; color:#fff; text-shadow:none; }
+        .home-intro h1 em { color:#b9dfc7; font-style:normal; }
+        .home-intro p { max-width:540px; margin:0; color:rgba(255,255,255,.78); font-size:clamp(14px,2vw,17px); line-height:1.65; }
+        .route-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:0 0 12px; color:rgba(255,255,255,.86); font-size:10px; font-weight:800; letter-spacing:1.7px; }
+        .route-heading i { font-style:normal; color:rgba(255,255,255,.55); font-size:11px; font-weight:500; letter-spacing:0; }
+        .btn-group { max-width:none; gap:10px; }
+        .route-card { position:relative; display:flex; align-items:center; gap:14px; width:100%; min-height:88px; padding:15px 48px 15px 15px; text-align:left; color:#17372f; background:rgba(250,252,249,.96); border:1px solid rgba(255,255,255,.72); border-radius:18px; box-shadow:0 10px 28px rgba(0,0,0,.15); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); transition:transform .2s ease,background .2s ease,box-shadow .2s ease; }
+        .route-card:hover { background:#fff; transform:translateY(-2px); box-shadow:0 15px 34px rgba(0,0,0,.22); }
+        .route-icon { flex:0 0 48px; width:48px; height:48px; display:grid; place-items:center; border-radius:15px; background:#e6f0e9; font-size:23px; }
+        .route-copy { display:flex; flex:1; min-width:0; flex-direction:column; gap:5px; }
+        .route-copy strong { font-size:16px; line-height:1.2; color:#183b32; }
+        .route-copy small { font-size:12px; line-height:1.35; color:#718078; font-weight:500; }
+        .route-duration { align-self:flex-start; white-space:nowrap; padding:6px 8px; border-radius:8px; background:#edf3ee; color:#537565; font-size:9px; font-weight:800; letter-spacing:.8px; }
+        .route-arrow { position:absolute; right:17px; bottom:15px; color:#648675; font-size:17px; }
+        .home-footer { display:flex; justify-content:space-between; align-items:center; gap:14px; margin-top:22px; color:rgba(255,255,255,.56); font-size:9px; letter-spacing:1px; }
+        .home-footer a { color:rgba(255,255,255,.82); text-decoration:none; font-size:11px; letter-spacing:0; }
+        .home-footer a b { color:#c5e7d0; }
+        #main-app { height:100vh; height:100dvh; width:100%; overflow:hidden; }
+        #map { touch-action:pan-x pan-y; }
+        #day-selector { max-width:calc(100% - 24px); overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none; white-space:nowrap; }
+        #day-selector::-webkit-scrollbar { display:none; }
+        .day-btn { min-height:40px; flex:0 0 auto; }
+        #stops-panel { padding:14px; padding-bottom:calc(14px + env(safe-area-inset-bottom)); overscroll-behavior:contain; }
+        .stop-card { grid-template-columns:104px minmax(0,1fr); gap:13px; }
+        .stop-card img,.stop-placeholder { width:104px; height:104px; }
+        .stop-card h3 { font-size:14px; line-height:1.35; }
+        .stop-card p { font-size:12px; line-height:1.5; }
+        .stop-actions a,.stop-actions button { min-height:36px; display:inline-flex; align-items:center; justify-content:center; padding:8px 11px; font-size:11px; }
+        #back-btn { display:flex; align-items:center; justify-content:center; min-width:48px; min-height:48px; }
+        @media (max-width:600px) {
+            #setup-screen { justify-content:flex-start; padding:22px 16px calc(22px + env(safe-area-inset-bottom)); background-attachment:scroll; }
+            .home-content { width:100%; margin:auto 0; }
+            .home-brand { font-size:12px; }
+            .home-brand small { font-size:8px; letter-spacing:.8px; }
+            .home-intro { margin:35px 0 25px; }
+            .home-intro h1 { font-size:clamp(36px,11vw,48px); letter-spacing:-1.5px; }
+            .home-intro p { font-size:14px; }
+            .route-card { min-height:82px; gap:11px; padding:13px 43px 13px 12px; border-radius:16px; }
+            .route-icon { flex-basis:42px; width:42px; height:42px; border-radius:13px; font-size:21px; }
+            .route-copy strong { font-size:14px; }
+            .route-copy small { font-size:11px; }
+            .route-duration { font-size:8px; padding:5px 6px; }
+            .home-footer { align-items:flex-start; flex-direction:column; gap:9px; margin-top:18px; }
+            #day-selector { top:10px; left:10px; right:10px; transform:none; width:auto; max-width:none; justify-content:flex-start; padding:6px; gap:5px; border-radius:16px; background:rgba(255,255,255,.94); }
+            .day-btn { min-height:42px; padding:8px 13px; font-size:12px; }
+            #route-info { top:66px; left:10px; right:10px; max-height:22vh; overflow-y:auto; padding:12px 38px 12px 13px; border-radius:14px; font-size:12px; }
+            #route-info .close-btn { top:8px; right:12px; min-width:28px; min-height:28px; display:grid; place-items:center; }
+            #stops-panel { left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom)); max-height:46dvh; padding:11px; border-radius:18px; }
+            #stops-panel h2 { font-size:14px; }
+            #stops-panel .panel-meta { font-size:10px; }
+            .stop-card { grid-template-columns:84px minmax(0,1fr); gap:10px; padding:11px 0; }
+            .stop-card img,.stop-placeholder { width:84px; height:84px; border-radius:11px; }
+            .stop-card h3 { font-size:13px; }
+            .stop-card p { font-size:11px; line-height:1.45; }
+            .stop-card .coords { font-size:9px; line-height:1.4; }
+            .stop-card .photo-credit { font-size:9px; }
+            .stop-actions { gap:5px; }
+            .stop-actions a,.stop-actions button { min-height:38px; padding:8px 9px; font-size:10px; }
+            #back-btn { right:12px; bottom:calc(48dvh + 18px + env(safe-area-inset-bottom)); width:44px; height:44px; min-width:44px; min-height:44px; font-size:17px; }
+        }
+        @media (max-width:380px) {
+            .home-brand small { display:none; }
+            .route-duration { display:none; }
+            .stop-card { grid-template-columns:72px minmax(0,1fr); }
+            .stop-card img,.stop-placeholder { width:72px; height:72px; }
+            #route-info { max-height:18vh; }
+        }
+        @media (prefers-reduced-motion:reduce) {
+            *,*::before,*::after { scroll-behavior:auto !important; transition:none !important; animation:none !important; }
+        }
     </style>
 </head>
 <body>
 
     <div id="setup-screen">
-        <h1>🏔️ Алтай Гайд</h1>
-        <div class="welcome-text">
-            Приветствуем в онлайн гайде путешествий по Алтаю! Для Вас мы составили три самых популярных гайда с подробным описанием локаций для культурных посещений, мест проживаний и точек общественного питания!<br><br>
-            Если вы хотите подобрать индивидуальный гайд под свои критерии, можете написать куратору проекта <a href="https://t.me/makarovml">@makarovml</a> в личные сообщения, и в короткие сроки гайд будет разработан! <br><br>
-            Благодарим, что воспользовались нашим приложением!
-        </div>
-        <div class="btn-group">
-            <button onclick="startApp('2-days')">Тур на два дня "Чемальская история"</button>
-            <button onclick="startApp('7-days')">Тур на семь дней "Чуйский тракт"</button>
-            <button onclick="startApp('14-days')">Тур на 11 дней "Золотое кольцо Алтая"</button>
+        <div class="home-content">
+            <div class="home-brand"><span class="brand-mark">🏔</span><span>АЛТАЙ <b>ГАЙД</b></span><span class="brand-dot"></span><small>ПУТЕШЕСТВУЙ СВОИМ МАРШРУТОМ</small></div>
+            <div class="home-intro">
+                <span class="eyebrow">ТВОЁ ПУТЕШЕСТВИЕ НАЧИНАЕТСЯ ЗДЕСЬ</span>
+                <h1>Открой свой <em>Алтай</em></h1>
+                <p>Готовые маршруты, красивые места и удобная карта путешествия. Выбирай продолжительность и отправляйся исследовать горы.</p>
+            </div>
+            <div class="route-heading"><span>ВЫБЕРИ СВОЙ МАРШРУТ</span><i>3 путешествия</i></div>
+            <div class="btn-group">
+                <button class="route-card route-card-short" onclick="startApp('2-days')">
+                    <span class="route-icon">🌿</span><span class="route-copy"><strong>Чемальская история</strong><small>Короткое знакомство с сердцем Алтая</small></span><span class="route-duration">2 ДНЯ</span><span class="route-arrow">↗</span>
+                </button>
+                <button class="route-card route-card-medium" onclick="startApp('7-days')">
+                    <span class="route-icon">🏞️</span><span class="route-copy"><strong>Чуйский тракт</strong><small>Большое путешествие по главным местам</small></span><span class="route-duration">7 ДНЕЙ</span><span class="route-arrow">↗</span>
+                </button>
+                <button class="route-card route-card-long" onclick="startApp('14-days')">
+                    <span class="route-icon">⛰️</span><span class="route-copy"><strong>Золотое кольцо Алтая</strong><small>Путешествие от Чемала до Телецкого озера</small></span><span class="route-duration">11 ДНЕЙ</span><span class="route-arrow">↗</span>
+                </button>
+            </div>
+            <div class="home-footer"><span>✦ МАРШРУТЫ И КАРТА В ОДНОМ МЕСТЕ</span><a href="https://t.me/makarovml" target="_blank" rel="noopener">Нужен индивидуальный тур? <b>Напиши куратору ↗</b></a></div>
         </div>
     </div>
 
