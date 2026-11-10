@@ -242,6 +242,13 @@
         #mobile-nav button.active{background:rgba(255,255,255,.88);color:#17382f;box-shadow:inset 0 1px 0 #fff,0 3px 12px rgba(0,0,0,.14)}
         #stops-panel{bottom:calc(78px + env(safe-area-inset-bottom));max-height:min(48vh,440px);scroll-behavior:smooth}
         #stops-panel .panel-head{position:sticky;top:-11px;z-index:2;padding:9px 2px 10px;margin:0 0 7px;background:rgba(247,250,247,.94);backdrop-filter:blur(14px)}
+        #stops-panel .panel-head{position:sticky}
+        #stops-panel .panel-drag-handle{position:absolute;top:3px;left:50%;z-index:4;transform:translateX(-50%);width:64px;height:16px;display:flex;align-items:center;justify-content:center;cursor:ns-resize;touch-action:none;user-select:none;-webkit-user-select:none}
+        #stops-panel .panel-drag-handle span{display:block;width:34px;height:4px;border-radius:99px;background:rgba(75,103,88,.35);box-shadow:0 1px 0 rgba(255,255,255,.8)}
+        #stops-panel .panel-head{padding-top:17px}
+        #stops-panel.is-collapsed .panel-head{padding-top:17px}
+        #stops-panel.is-dragging{transition:none!important;user-select:none}
+        @media(max-width:600px){#stops-panel .panel-drag-handle{width:76px;height:18px}#stops-panel .panel-drag-handle span{width:38px;height:4px}}
         .stop-card{align-items:start;padding:13px 0;border-top:1px solid rgba(31,73,59,.12)}
         .stop-media{min-width:0}
         .stop-card img,.stop-placeholder{cursor:zoom-in;box-shadow:0 5px 15px rgba(20,55,42,.12)}
@@ -829,8 +836,56 @@
                 panelTitle = 'День ' + currentDayNumber + (currentRoute === routesData['14-days'] ? ' · Золотое кольцо Алтая' : ' · Чуйский тракт');
             }
             panel.classList.remove('is-collapsed');
-            panel.innerHTML = '<div class="panel-head"><div><h2>' + panelTitle + '</h2><div class="panel-meta">' + panelMeta + '</div></div><button class="panel-collapse" type="button" aria-expanded="true" aria-label="Свернуть список мест" title="Свернуть список мест"><span class="collapse-label">Свернуть</span><span class="collapse-chevron">⌄</span></button></div>';
+            panel.style.height = '';
+            panel.style.maxHeight = '';
+            panel.innerHTML = '<div class="panel-head"><div class="panel-drag-handle" role="separator" aria-orientation="horizontal" aria-label="Потяните вверх или вниз, чтобы изменить высоту списка"><span></span></div><div><h2>' + panelTitle + '</h2><div class="panel-meta">' + panelMeta + '</div></div><button class="panel-collapse" type="button" aria-expanded="true" aria-label="Свернуть список мест" title="Свернуть список мест"><span class="collapse-label">Свернуть</span><span class="collapse-chevron">⌄</span></button></div>';
             const collapseButton = panel.querySelector('.panel-collapse');
+            const dragHandle = panel.querySelector('.panel-drag-handle');
+            let dragStartY = 0;
+            let dragStartHeight = 0;
+            let dragPointerId = null;
+            const maxPanelHeight = () => Math.max(180, Math.floor(window.innerHeight * 0.78));
+            dragHandle.onpointerdown = event => {
+                if (event.button !== undefined && event.button !== 0) return;
+                event.preventDefault();
+                dragPointerId = event.pointerId;
+                dragStartY = event.clientY;
+                dragStartHeight = panel.getBoundingClientRect().height;
+                panel.classList.remove('is-collapsed');
+                panel.style.maxHeight = 'none';
+                panel.style.height = Math.max(76, dragStartHeight) + 'px';
+                dragHandle.setPointerCapture(event.pointerId);
+            };
+            dragHandle.onpointermove = event => {
+                if (dragPointerId !== event.pointerId) return;
+                const nextHeight = Math.max(76, Math.min(maxPanelHeight(), dragStartHeight + dragStartY - event.clientY));
+                panel.style.height = nextHeight + 'px';
+            };
+            const finishPanelDrag = event => {
+                if (dragPointerId !== event.pointerId) return;
+                dragPointerId = null;
+                const height = panel.getBoundingClientRect().height;
+                if (height < 112) {
+                    panel.classList.add('is-collapsed');
+                    panel.style.height = '';
+                    panel.style.maxHeight = '';
+                    collapseButton.setAttribute('aria-expanded', 'false');
+                    collapseButton.setAttribute('aria-label', 'Развернуть список мест');
+                    collapseButton.title = 'Развернуть список мест';
+                    collapseButton.querySelector('.collapse-label').textContent = 'Показать места';
+                    collapseButton.querySelector('.collapse-chevron').textContent = '⌃';
+                } else {
+                    panel.classList.remove('is-collapsed');
+                    panel.style.maxHeight = 'none';
+                    collapseButton.setAttribute('aria-expanded', 'true');
+                    collapseButton.setAttribute('aria-label', 'Свернуть список мест');
+                    collapseButton.title = 'Свернуть список мест';
+                    collapseButton.querySelector('.collapse-label').textContent = 'Свернуть';
+                    collapseButton.querySelector('.collapse-chevron').textContent = '⌄';
+                }
+            };
+            dragHandle.onpointerup = finishPanelDrag;
+            dragHandle.onpointercancel = finishPanelDrag;
             collapseButton.onclick = () => {
                 const collapsed = panel.classList.toggle('is-collapsed');
                 collapseButton.setAttribute('aria-expanded', String(!collapsed));
