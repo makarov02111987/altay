@@ -737,16 +737,26 @@
     
         /* Final layout fixes: desktop edge-to-edge list + genuinely resizable mobile sheet */
         @media (min-width:900px){
+            /* The panel itself is the fixed-height flex column; the list owns
+               every pixel below the heading instead of sizing against 100%. */
             #stops-panel{
+                display:flex!important;
+                flex-direction:column!important;
+                height:auto!important;
+                min-height:0!important;
                 padding:0!important;
                 overflow-x:hidden!important;
-                background:linear-gradient(180deg,rgba(250,253,250,.98),rgba(235,243,237,.98))!important;
+                overflow-y:auto!important;
+                background:linear-gradient(180deg,#f8fcf8,#eaf2ec)!important;
             }
             #stops-panel>.panel-head{
+                position:sticky!important;
+                top:0!important;
+                flex:0 0 auto!important;
                 width:100%!important;
                 box-sizing:border-box!important;
                 margin:0!important;
-                padding:24px 24px 18px!important;
+                padding:24px!important;
             }
             #stops-panel>.stops-list{
                 display:flex!important;
@@ -755,11 +765,11 @@
                 align-self:stretch!important;
                 width:100%!important;
                 min-width:0!important;
-                min-height:100%!important;
+                min-height:0!important;
                 margin:0!important;
                 padding:0!important;
                 box-sizing:border-box!important;
-                background:linear-gradient(180deg,rgba(250,253,250,.98),rgba(235,243,237,.98))!important;
+                background:linear-gradient(180deg,#f5faf6,#eaf2ec)!important;
             }
             #stops-panel>.stops-list>.stop-card{
                 display:grid!important;
@@ -770,7 +780,7 @@
                 margin:0!important;
                 padding:16px 24px!important;
                 border-radius:0!important;
-                background:linear-gradient(90deg,rgba(245,250,246,.98),rgba(239,247,241,.98))!important;
+                background:linear-gradient(90deg,#f2f8f3,#eaf3ec)!important;
                 border-top:1px solid rgba(34,76,59,.12)!important;
                 border-bottom:1px solid rgba(34,76,59,.08)!important;
             }
@@ -805,9 +815,10 @@
             #stops-panel .stop-card{flex:1 0 auto!important;display:grid!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding:16px 24px!important;border-radius:0!important;background:linear-gradient(90deg,#f2f8f3,#eaf3ec)!important}
         }
         @media(max-width:600px){
-            #stops-panel{height:var(--panel-height,43dvh)!important;max-height:82dvh!important;min-height:68px!important}
-            #stops-panel .panel-head{touch-action:none!important;cursor:ns-resize!important;user-select:none!important;-webkit-user-select:none!important}
+            #stops-panel{height:var(--panel-height,43dvh)!important;max-height:82dvh!important;min-height:68px!important;display:flex!important;flex-direction:column!important;touch-action:pan-y}
+            #stops-panel>.panel-head{flex:0 0 auto!important;touch-action:none!important;cursor:ns-resize!important;user-select:none!important;-webkit-user-select:none!important}
             #stops-panel .panel-drag-handle{display:flex!important;pointer-events:none!important;touch-action:none!important}
+            #stops-panel>.stops-list{flex:1 1 auto!important;min-height:0!important;width:100%!important;overflow-y:auto!important;overscroll-behavior:contain!important}
             #stops-panel.is-collapsed{height:68px!important;min-height:68px!important;max-height:68px!important}
             #stops-panel.is-dragging{transition:none!important}
         }
@@ -1328,77 +1339,59 @@
                 let dragStartY = 0;
                 let dragStartHeight = 0;
                 let dragPointerId = null;
-                const maxPanelHeight = () => Math.max(220, Math.floor(window.innerHeight * 0.82));
+                const maxPanelHeight = () => Math.max(220, Math.floor((window.visualViewport?.height || window.innerHeight) * 0.82));
                 const setPanelHeight = height => {
                     const bounded = Math.max(68, Math.min(maxPanelHeight(), Math.round(height)));
                     panel.style.setProperty('--panel-height', bounded + 'px');
                     return bounded;
                 };
-                const beginDrag = clientY => {
+                const beginDrag = (clientY, pointerId) => {
+                    dragPointerId = pointerId;
                     dragStartY = clientY;
                     dragStartHeight = panel.getBoundingClientRect().height;
                     panel.classList.remove('is-collapsed');
                     panel.classList.add('is-dragging');
+                    panel.style.overflow = 'hidden';
                     setPanelHeight(Math.max(76, dragStartHeight));
                 };
-                const moveDrag = clientY => setPanelHeight(dragStartHeight + dragStartY - clientY);
-                const finishDrag = () => {
+                const moveDrag = (clientY, pointerId) => {
+                    if (dragPointerId !== pointerId) return;
+                    setPanelHeight(dragStartHeight + dragStartY - clientY);
+                };
+                const finishDrag = pointerId => {
+                    if (dragPointerId !== pointerId) return;
                     const height = panel.getBoundingClientRect().height;
                     panel.classList.remove('is-dragging');
                     if (height <= 138) {
                         panel.classList.add('is-collapsed');
-                        panel.style.removeProperty('--panel-height');
+                        panel.style.setProperty('--panel-height', '68px');
                         panel.style.overflow = 'hidden';
                     } else {
                         panel.classList.remove('is-collapsed');
                         setPanelHeight(height);
-                        panel.style.overflow = 'auto';
+                        panel.style.overflowY = 'auto';
                     }
                     dragPointerId = null;
                 };
 
-                /* Touch Events are used directly on the grab area. Preventing the
-                   browser's native pan here keeps the gesture from being stolen. */
-                dragHandle.addEventListener('touchstart', event => {
-                    if (event.target.closest('.panel-close') || !event.touches.length) return;
-                    beginDrag(event.touches[0].clientY);
+                /* One Pointer Events path for touch, pen and mouse. Capture keeps
+                   move/up events arriving even when the finger leaves the header. */
+                dragHandle.addEventListener('pointerdown', event => {
+                    if (event.target.closest('.panel-close') || (event.pointerType === 'mouse' && event.button !== 0)) return;
+                    if (dragPointerId !== null) return;
+                    beginDrag(event.clientY, event.pointerId);
+                    try { dragHandle.setPointerCapture(event.pointerId); } catch (e) {}
                     event.preventDefault();
-                }, { passive:false });
-                dragHandle.addEventListener('touchmove', event => {
-                    if (!panel.classList.contains('is-dragging') || !event.touches.length) return;
-                    moveDrag(event.touches[0].clientY);
-                    event.preventDefault();
-                }, { passive:false });
-                dragHandle.addEventListener('touchend', event => {
-                    if (!panel.classList.contains('is-dragging')) return;
-                    finishDrag();
-                    event.preventDefault();
-                }, { passive:false });
-                dragHandle.addEventListener('touchcancel', () => {
-                    if (panel.classList.contains('is-dragging')) finishDrag();
                 });
-
-                /* Pointer fallback for devices without touch events. */
-                if (!('ontouchstart' in window)) {
-                    dragHandle.addEventListener('pointerdown', event => {
-                        if (event.target.closest('.panel-close') || (event.button !== undefined && event.button !== 0)) return;
-                        dragPointerId = event.pointerId;
-                        beginDrag(event.clientY);
-                        try { dragHandle.setPointerCapture(event.pointerId); } catch (e) {}
-                        event.preventDefault();
-                    });
-                    dragHandle.addEventListener('pointermove', event => {
-                        if (dragPointerId !== event.pointerId) return;
-                        moveDrag(event.clientY);
-                        event.preventDefault();
-                    });
-                    const finishPointer = event => {
-                        if (dragPointerId !== event.pointerId) return;
-                        finishDrag();
-                    };
-                    dragHandle.addEventListener('pointerup', finishPointer);
-                    dragHandle.addEventListener('pointercancel', finishPointer);
-                }
+                dragHandle.addEventListener('pointermove', event => {
+                    if (dragPointerId !== event.pointerId) return;
+                    moveDrag(event.clientY, event.pointerId);
+                    event.preventDefault();
+                });
+                const finishPointer = event => finishDrag(event.pointerId);
+                dragHandle.addEventListener('pointerup', finishPointer);
+                dragHandle.addEventListener('pointercancel', finishPointer);
+                dragHandle.addEventListener('lostpointercapture', finishPointer);
             }
             if (firstName.includes('Остров Патмос')) {
                 const routeLinks = document.createElement('div');
