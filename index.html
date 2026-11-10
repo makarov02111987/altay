@@ -257,6 +257,7 @@
         #stops-panel .panel-head{padding-top:17px}
         #stops-panel.is-collapsed .panel-head{padding-top:17px}
         #stops-panel.is-dragging{transition:none!important;user-select:none}
+        #stops-panel .panel-close{display:none}
         @media(max-width:600px){#stops-panel .panel-drag-handle{width:76px;height:18px}#stops-panel .panel-drag-handle span{width:38px;height:4px}}
         .stop-card{align-items:start;padding:13px 0;border-top:1px solid rgba(31,73,59,.12)}
         .stop-media{min-width:0}
@@ -383,12 +384,16 @@
             #main-app.map-expanded #route-info{left:50%;right:auto;width:min(680px,calc(100% - 64px));transform:translateX(-50%)}
             #map{transition:inset .35s ease,width .35s ease,border-radius .35s ease}
             #map{position:absolute;inset:0 0 0 calc(var(--desktop-sidebar) + 48px);width:auto;height:100%;border-radius:24px 0 0 24px;overflow:hidden;box-shadow:-12px 0 38px rgba(18,48,35,.08)}
-            #stops-panel{top:88px;bottom:24px;left:24px;right:auto;width:var(--desktop-sidebar);max-height:none;height:auto;box-sizing:border-box;padding:18px 19px 22px;border-radius:24px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(74,112,88,.28) transparent}
-            #stops-panel .panel-head{top:-18px;gap:14px;padding:22px 2px 15px;margin:0 0 10px;background:linear-gradient(180deg,rgba(252,254,252,.99),rgba(248,251,248,.96));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+            #stops-panel{top:18px;bottom:18px;left:18px;right:auto;width:var(--desktop-sidebar);max-height:none;height:auto;box-sizing:border-box;padding:0 19px 18px;border-radius:24px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(74,112,88,.28) transparent;display:flex;flex-direction:column}
+            #stops-panel .panel-head{position:sticky;top:0;z-index:5;flex:0 0 auto;gap:14px;padding:24px 2px 18px;margin:0 0 8px;background:linear-gradient(180deg,rgba(252,254,252,.99),rgba(248,251,248,.96));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+            #stops-panel .panel-heading-copy{min-width:0;flex:1}
             #stops-panel .panel-head h2{font-size:19px;letter-spacing:-.6px}
             #stops-panel .panel-meta{font-size:12px;margin-top:5px}
-            #stops-panel .panel-drag-handle{top:2px;width:80px;height:15px}
-            #stops-panel .panel-drag-handle span{width:42px;height:4px;background:rgba(68,105,81,.32)}
+            #stops-panel .panel-drag-handle{display:none!important}
+            #stops-panel .panel-close{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;min-height:38px;padding:0;border:1px solid rgba(72,111,87,.16);border-radius:13px;background:rgba(230,240,232,.82);color:#315c45;font:400 27px/1 inherit;box-shadow:inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer}
+            #stops-panel .stops-list{flex:1 0 auto;min-height:0}
+            #stops-panel.is-collapsed{height:auto;max-height:none}
+            #stops-panel.is-collapsed>:not(.panel-head){display:block!important}
             .stop-card{grid-template-columns:clamp(112px,10vw,142px) minmax(0,1fr);gap:15px;padding:16px 2px;border-top-color:rgba(34,76,59,.12)}
             .stop-card img,.stop-placeholder{width:100%;height:clamp(112px,10vw,142px);border-radius:17px}
             .stop-card h3{font-size:15px;line-height:1.35;margin:2px 0 7px}
@@ -986,6 +991,9 @@
             const panel = document.getElementById('stops-panel');
             app.classList.remove('map-expanded');
             panel.style.display = 'block';
+            panel.classList.remove('is-collapsed');
+            panel.style.height = '';
+            panel.style.maxHeight = '';
             panel.scrollTop = 0;
             setNavActive('nav-places');
             if (myMap) requestAnimationFrame(() => myMap.container.fitToViewport());
@@ -1115,50 +1123,58 @@
             panel.classList.remove('is-collapsed');
             panel.style.height = '';
             panel.style.maxHeight = '';
-            panel.innerHTML = '<div class="panel-head"><div class="panel-drag-handle" role="separator" aria-orientation="horizontal" aria-label="Потяните вниз, чтобы убрать список, или вверх, чтобы развернуть"><span></span></div><div><h2>' + panelTitle + '</h2><div class="panel-meta">' + panelMeta + '</div></div></div><div class="stops-list"></div>';
+            const isDesktopPanel = window.matchMedia('(min-width: 900px)').matches;
+            panel.classList.remove('is-collapsed', 'is-dragging');
+            panel.style.height = '';
+            panel.style.maxHeight = '';
+            panel.style.overflow = '';
+            panel.innerHTML = '<div class="panel-head"><div class="panel-drag-handle" aria-hidden="true"><span></span></div><div class="panel-heading-copy"><h2>' + panelTitle + '</h2><div class="panel-meta">' + panelMeta + '</div></div><button class="panel-close" type="button" aria-label="Закрыть список мест" onclick="showMap()">×</button></div><div class="stops-list"></div>';
             const listContainer = panel.querySelector('.stops-list');
             const dragHandle = panel.querySelector('.panel-head');
-            let dragStartY = 0;
-            let dragStartHeight = 0;
-            let dragPointerId = null;
-            const maxPanelHeight = () => Math.max(220, Math.floor(window.innerHeight * 0.82));
-            dragHandle.onpointerdown = event => {
-                if (event.button !== undefined && event.button !== 0) return;
-                dragPointerId = event.pointerId;
-                dragStartY = event.clientY;
-                dragStartHeight = panel.getBoundingClientRect().height;
-                panel.classList.remove('is-collapsed');
-                panel.classList.add('is-dragging');
-                panel.style.maxHeight = 'none';
-                panel.style.height = Math.max(76, dragStartHeight) + 'px';
-                try { dragHandle.setPointerCapture(event.pointerId); } catch (e) {}
-                event.preventDefault();
-            };
-            dragHandle.onpointermove = event => {
-                if (dragPointerId !== event.pointerId) return;
-                const nextHeight = Math.max(68, Math.min(maxPanelHeight(), dragStartHeight + dragStartY - event.clientY));
-                panel.style.height = nextHeight + 'px';
-            };
-            const finishPanelDrag = event => {
-                if (dragPointerId !== event.pointerId) return;
-                const swipeDown = event.clientY - dragStartY > 45;
-                const height = panel.getBoundingClientRect().height;
-                dragPointerId = null;
-                panel.classList.remove('is-dragging');
-                if (swipeDown || height < 125) {
-                    panel.classList.add('is-collapsed');
-                    panel.style.height = '';
-                    panel.style.maxHeight = '';
-                    panel.style.overflow = 'hidden';
-                } else {
+            if (!isDesktopPanel) {
+                let dragStartY = 0;
+                let dragStartHeight = 0;
+                let dragPointerId = null;
+                const maxPanelHeight = () => Math.max(220, Math.floor(window.innerHeight * 0.82));
+                dragHandle.onpointerdown = event => {
+                    if (event.target.closest('.panel-close')) return;
+                    if (event.button !== undefined && event.button !== 0) return;
+                    dragPointerId = event.pointerId;
+                    dragStartY = event.clientY;
+                    dragStartHeight = panel.getBoundingClientRect().height;
                     panel.classList.remove('is-collapsed');
-                    panel.style.maxHeight = '82dvh';
-                    panel.style.height = '';
-                    panel.style.overflow = 'auto';
-                }
-            };
-            dragHandle.onpointerup = finishPanelDrag;
-            dragHandle.onpointercancel = finishPanelDrag;
+                    panel.classList.add('is-dragging');
+                    panel.style.maxHeight = 'none';
+                    panel.style.height = Math.max(76, dragStartHeight) + 'px';
+                    try { dragHandle.setPointerCapture(event.pointerId); } catch (e) {}
+                    event.preventDefault();
+                };
+                dragHandle.onpointermove = event => {
+                    if (dragPointerId !== event.pointerId) return;
+                    const nextHeight = Math.max(68, Math.min(maxPanelHeight(), dragStartHeight + dragStartY - event.clientY));
+                    panel.style.height = nextHeight + 'px';
+                };
+                const finishPanelDrag = event => {
+                    if (dragPointerId !== event.pointerId) return;
+                    const swipeDown = event.clientY - dragStartY > 45;
+                    const height = panel.getBoundingClientRect().height;
+                    dragPointerId = null;
+                    panel.classList.remove('is-dragging');
+                    if (swipeDown || height < 125) {
+                        panel.classList.add('is-collapsed');
+                        panel.style.height = '';
+                        panel.style.maxHeight = '';
+                        panel.style.overflow = 'hidden';
+                    } else {
+                        panel.classList.remove('is-collapsed');
+                        panel.style.maxHeight = '82dvh';
+                        panel.style.height = '';
+                        panel.style.overflow = 'auto';
+                    }
+                };
+                dragHandle.onpointerup = finishPanelDrag;
+                dragHandle.onpointercancel = finishPanelDrag;
+            }
             if (firstName.includes('Остров Патмос')) {
                 const routeLinks = document.createElement('div');
                 routeLinks.className = 'stop-actions';
