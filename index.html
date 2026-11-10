@@ -909,7 +909,6 @@
             panel.classList.remove('is-collapsed');
             panel.style.height = '';
             panel.style.maxHeight = '';
-            panel.classList.remove('gallery-mode');
             panel.innerHTML = '<div class="panel-head"><div class="panel-drag-handle" role="separator" aria-orientation="horizontal" aria-label="Потяните вверх или вниз, чтобы изменить высоту списка"><span></span></div><div><h2>' + panelTitle + '</h2><div class="panel-meta">' + panelMeta + '</div></div><button class="panel-collapse" type="button" aria-expanded="true" aria-label="Свернуть список мест" title="Свернуть список мест"><span class="collapse-label">Свернуть</span><span class="collapse-chevron">⌄</span></button></div><div class="stops-list"></div>';
             const listContainer = panel.querySelector('.stops-list');
             const collapseButton = panel.querySelector('.panel-collapse');
