@@ -375,6 +375,42 @@
         @media(max-width:600px){.detail-hero{height:36vh;min-height:230px}.detail-body{width:calc(100% - 36px);padding-top:22px}.detail-description{font-size:14px}.detail-actions{flex-direction:column}.detail-actions a,.detail-actions button{width:100%;box-sizing:border-box}}
         @media(prefers-reduced-motion:reduce){#place-detail.open{animation:none}}
 
+        /* Mobile panel: keep the drag surface available to touch pointers */
+        @media(max-width:600px){
+            #stops-panel .panel-head{
+                position:sticky;
+                top:0;
+                touch-action:none;
+                cursor:ns-resize;
+                user-select:none;
+                -webkit-user-select:none;
+                -webkit-touch-callout:none;
+                padding-top:30px!important;
+            }
+            #stops-panel .panel-drag-handle{
+                display:flex!important;
+                position:absolute;
+                top:4px;
+                left:50%;
+                z-index:8;
+                transform:translateX(-50%);
+                width:76px;
+                height:22px;
+                align-items:center;
+                justify-content:center;
+                pointer-events:none;
+            }
+            #stops-panel .panel-drag-handle span{
+                width:38px;
+                height:4px;
+                border-radius:99px;
+                background:rgba(75,103,88,.42);
+                box-shadow:0 1px 0 rgba(255,255,255,.9);
+            }
+            #stops-panel .panel-close{touch-action:manipulation}
+            #stops-panel.is-dragging{transition:none!important}
+        }
+
         /* Desktop layout: dedicated places sidebar + spacious map workspace */
         @media (min-width: 900px) {
             #main-app{--desktop-sidebar:clamp(350px,30vw,440px);overflow:hidden;background:#e8eee9}
