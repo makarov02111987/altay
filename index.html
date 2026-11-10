@@ -660,7 +660,8 @@
             setTimeout(() => {
                 document.getElementById('setup-screen').style.display = 'none';
                 document.getElementById('main-app').style.display = 'block';
-                ymaps.ready(initMap);
+                if (typeof ymaps !== 'undefined' && ymaps.ready) ymaps.ready(initMap);
+                else initMap();
             }, 350);
         }
         function getLastTrip() {
@@ -737,7 +738,13 @@
             document.getElementById('stops-panel').style.display = 'block';
             document.getElementById('route-info').style.display = 'none';
             renderDaySelector();
-            myMap = new ymaps.Map("map", { center: [51.8, 86.0], zoom: 8, controls: ['zoomControl'] });
+            if (typeof ymaps !== 'undefined' && ymaps.Map) {
+                document.getElementById('map').innerHTML = '';
+                myMap = new ymaps.Map("map", { center: [51.8, 86.0], zoom: 8, controls: ['zoomControl'] });
+            } else {
+                myMap = null;
+                document.getElementById('map').innerHTML = '<div style="height:100%;display:grid;place-items:center;text-align:center;padding:24px;box-sizing:border-box;background:#e2ebe3;color:#315344">Карта временно недоступна. Список мест работает.</div>';
+            }
             showDay(initialDayNumber);
         }
 
@@ -768,23 +775,7 @@
                     showFavorites();
                 };
                 card.querySelector('.open-favorite').onclick = () => openFavoriteDay(item);
-                listContainer.appendChild(card);
-                if (loc.photo) {
-                    const tile = document.createElement('button');
-                    tile.type = 'button';
-                    tile.className = 'gallery-tile';
-                    tile.setAttribute('aria-label', 'Подробнее: ' + cleanName);
-                    const tileImage = document.createElement('img');
-                    tileImage.src = loc.photo;
-                    tileImage.alt = cleanName;
-                    tileImage.loading = 'lazy';
-                    tileImage.onerror = () => { tileImage.style.display = 'none'; };
-                    const tileTitle = document.createElement('span');
-                    tileTitle.textContent = cleanName;
-                    tile.append(tileImage, tileTitle);
-                    tile.onclick = openDetails;
-                    galleryContainer.appendChild(tile);
-                }
+                panel.appendChild(card);
             });
         }
 
@@ -853,6 +844,15 @@
         }
         document.addEventListener('keydown', event => { if (event.key === 'Escape') { closePlaceDetail(); closePhotoViewer(); } });
         function initMap() {
+            const mapElement = document.getElementById('map');
+            if (typeof ymaps === 'undefined' || !ymaps.Map) {
+                myMap = null;
+                mapElement.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;padding:28px;box-sizing:border-box;text-align:center;background:linear-gradient(145deg,#e7eee8,#d5e2d8);color:#315344;font:600 15px/1.6 Manrope,Arial,sans-serif"><div><div style="font-size:38px;margin-bottom:12px">🏔️</div><strong>Карта временно недоступна</strong><br><span style="font-size:12px;font-weight:400">Маршрут и все достопримечательности доступны в списке мест. Проверь подключение к интернету, чтобы загрузить карту.</span></div></div>';
+                renderDaySelector();
+                showDay(initialDayNumber);
+                return;
+            }
+            mapElement.innerHTML = '';
             myMap = new ymaps.Map("map", { center: [51.8, 86.0], zoom: 8, controls: ['zoomControl'] });
             renderDaySelector();
             showDay(initialDayNumber);
@@ -976,7 +976,11 @@
                 collapseButton.querySelector('.collapse-chevron').textContent = collapsed ? '⌃' : '⌄';
             };
             if (firstName.includes('Остров Патмос')) {
-                panel.innerHTML += '<div class="stop-actions" style="margin:0 0 8px"><a href="https://yandex.ru/maps/?rtext=51.398380,86.000320~51.391080,86.004800&rtt=pd" target="_blank" rel="noopener">Пешком: Патмос → ГЭС ↗</a><a href="https://yandex.ru/maps/?rtext=51.261475,86.071725~51.122927,86.165701~50.960545,86.288532&rtt=auto" target="_blank" rel="noopener">На авто: Че-Чкыш → Бельтертуюк ↗</a></div>';
+                const routeLinks = document.createElement('div');
+                routeLinks.className = 'stop-actions';
+                routeLinks.style.margin = '0 0 8px';
+                routeLinks.innerHTML = '<a href="https://yandex.ru/maps/?rtext=51.398380,86.000320~51.391080,86.004800&rtt=pd" target="_blank" rel="noopener">Пешком: Патмос → ГЭС ↗</a><a href="https://yandex.ru/maps/?rtext=51.261475,86.071725~51.122927,86.165701~50.960545,86.288532&rtt=auto" target="_blank" rel="noopener">На авто: Че-Чкыш → Бельтертуюк ↗</a>';
+                listContainer.appendChild(routeLinks);
             }
             locations.forEach((loc, index) => {
                 const card = document.createElement('article');
@@ -1006,6 +1010,7 @@
                 };
                 const focus = card.querySelector('.focus-stop');
                 if (focus) focus.onclick = () => {
+                    if (!myMap) { setNavActive('nav-places'); return; }
                     myMap.setCenter(loc.coords, 15, { duration: 250 });
                     const marker = markers.find(m => {
                         const p = m.geometry.getCoordinates();
@@ -1014,12 +1019,28 @@
                     if (marker) marker.balloon.open();
                     setNavActive('nav-map');
                 };
-                panel.appendChild(card);
+                listContainer.appendChild(card);
+                if (loc.photo) {
+                    const tile = document.createElement('button');
+                    tile.type = 'button';
+                    tile.className = 'gallery-tile';
+                    tile.setAttribute('aria-label', 'Подробнее: ' + cleanName);
+                    const tileImage = document.createElement('img');
+                    tileImage.src = loc.photo;
+                    tileImage.alt = cleanName;
+                    tileImage.loading = 'lazy';
+                    tileImage.onerror = () => { tileImage.style.display = 'none'; };
+                    const tileTitle = document.createElement('span');
+                    tileTitle.textContent = cleanName;
+                    tile.append(tileImage, tileTitle);
+                    tile.onclick = openDetails;
+                    galleryContainer.appendChild(tile);
+                }
             });
         }
 
         function showDay(dayNum) {
-            markers.forEach(m => myMap.geoObjects.remove(m));
+            if (myMap) markers.forEach(m => myMap.geoObjects.remove(m));
             markers = [];
             document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
             const activeDayButton = document.getElementById(`btn-day-${dayNum}`);
@@ -1051,6 +1072,7 @@
                 stopsPanel.style.display = 'none';
                 stopsPanel.innerHTML = '';
             }
+            if (myMap && typeof ymaps !== 'undefined') {
             dayData.locations.forEach((loc, index) => {
                 
                 if (!loc.coords) return;
@@ -1082,6 +1104,7 @@
                 const bounds = myMap.geoObjects.getBounds();
                 if (bounds) myMap.setBounds(bounds, { checkZoomRange: true, zoomMargin: 35 });
                 else if (dayData.locations[0].coords) myMap.setCenter(dayData.locations[0].coords, 11);
+            }
             }
         }
         updateResumeButton();
