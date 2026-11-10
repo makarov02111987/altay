@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Гайд по Алтаю - Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js?65"></script>
     <script src="https://api-maps.yandex.ru/2.1/?apikey=88572e75-0985-429a-b8fb-714a8ccc46da&lang=ru_RU" type="text/javascript"></script>
     <style>
         :root {
@@ -135,7 +136,7 @@
         .home-footer { display:flex; justify-content:space-between; align-items:center; gap:14px; margin-top:22px; color:rgba(255,255,255,.56); font-size:9px; letter-spacing:1px; }
         .home-footer a { color:rgba(255,255,255,.82); text-decoration:none; font-size:11px; letter-spacing:0; }
         .home-footer a b { color:#c5e7d0; }
-        #main-app { height:100vh; height:100dvh; width:100%; overflow:hidden; }
+        #main-app { height:100vh; height:var(--app-viewport-height,var(--tg-viewport-stable-height,100dvh)); width:100%; overflow:hidden; }
         #map { touch-action:pan-x pan-y; }
         #day-selector { max-width:calc(100% - 24px); overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none; white-space:nowrap; }
         #day-selector::-webkit-scrollbar { display:none; }
@@ -397,81 +398,6 @@
             #stops-panel.is-dragging{transition:none!important}
         }
 
-        /* Desktop sidebar: extend the places list surface to the full panel edges */
-        @media(min-width:900px){
-            #stops-panel{
-                padding:0!important;
-                overflow-y:auto;
-                overflow-x:hidden;
-            }
-            #stops-panel .panel-head{
-                box-sizing:border-box;
-                width:100%;
-                padding:24px 24px 18px!important;
-                margin:0!important;
-            }
-            #stops-panel .stops-list{
-                flex:1 0 auto;
-                width:100%;
-                min-height:100%;
-                box-sizing:border-box;
-                align-self:stretch;
-                margin:0;
-                padding:0;
-                background:linear-gradient(180deg,rgba(250,253,250,.42),rgba(235,243,237,.62));
-            }
-            #stops-panel .stop-card{
-                box-sizing:border-box;
-                width:100%;
-                padding:16px 24px!important;
-                margin:0;
-                flex:1 0 auto;
-            }
-        }
-
-        /* Desktop: make every stop row itself cover the complete panel width */
-        @media (min-width:900px){
-            #stops-panel{
-                padding:0!important;
-                background:linear-gradient(180deg,rgba(250,253,250,.98),rgba(235,243,237,.98))!important;
-                overflow-x:hidden!important;
-            }
-            #stops-panel .panel-head{
-                box-sizing:border-box!important;
-                width:100%!important;
-                margin:0!important;
-                padding:24px 24px 18px!important;
-                background:linear-gradient(180deg,rgba(252,254,252,.99),rgba(248,251,248,.96))!important;
-            }
-            #stops-panel .stops-list{
-                display:flex!important;
-                flex:1 0 auto!important;
-                flex-direction:column!important;
-                align-self:stretch!important;
-                width:100%!important;
-                min-width:0!important;
-                min-height:100%!important;
-                margin:0!important;
-                padding:0!important;
-                box-sizing:border-box!important;
-                background:linear-gradient(180deg,rgba(250,253,250,.98),rgba(235,243,237,.98))!important;
-            }
-            #stops-panel .stop-card{
-                display:grid!important;
-                box-sizing:border-box!important;
-                flex:1 0 auto!important;
-                width:100%!important;
-                min-width:0!important;
-                margin:0!important;
-                padding:16px 24px!important;
-                border-radius:0!important;
-                border-top:1px solid rgba(34,76,59,.12)!important;
-                border-bottom:1px solid rgba(34,76,59,.08)!important;
-                background:linear-gradient(90deg,rgba(245,250,246,.98),rgba(239,247,241,.98))!important;
-            }
-            #stops-panel .stop-card:last-child{border-bottom:0!important}
-        }
-
         /* Desktop layout: dedicated places sidebar + spacious map workspace */
         @media (min-width: 900px) {
             #main-app{--desktop-sidebar:clamp(350px,30vw,440px);overflow:hidden;background:#e8eee9}
@@ -726,75 +652,26 @@
             #stops-panel .stops-list{touch-action:pan-y!important}
         }
     
-        /* Final layout fixes: desktop edge-to-edge list + genuinely resizable mobile sheet */
-        @media (min-width:900px){
-            #stops-panel{display:flex!important;flex-direction:column!important;height:auto!important;min-height:0!important;padding:0!important;overflow-x:hidden!important;overflow-y:auto!important;background:linear-gradient(180deg,#f8fcf8,#eaf2ec)!important}
-            #stops-panel>.panel-head{position:sticky!important;top:0!important;z-index:5!important;flex:0 0 auto!important;width:100%!important;box-sizing:border-box!important;margin:0!important;padding:24px!important}
-            #stops-panel>.stops-list{display:flex!important;flex:1 1 0%!important;flex-direction:column!important;align-self:stretch!important;width:100%!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;box-sizing:border-box!important;background:linear-gradient(180deg,#f5faf6,#eaf2ec)!important}
-            #stops-panel>.stops-list>.stop-card{display:grid!important;flex:1 1 0%!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding:16px 24px!important;border-radius:0!important;background:linear-gradient(90deg,#f2f8f3,#eaf3ec)!important;border-top:1px solid rgba(34,76,59,.12)!important;border-bottom:1px solid rgba(34,76,59,.08)!important}
-            #stops-panel>.stops-list>.stop-card:last-child{border-bottom:0!important}
-        }
-        @media(max-width:600px){
-            #stops-panel{height:var(--panel-height,43dvh)!important;max-height:82dvh!important;min-height:68px!important;display:flex!important;flex-direction:column!important;touch-action:pan-y}
-            #stops-panel>.panel-head{flex:0 0 auto!important;touch-action:none!important;overscroll-behavior:none!important;cursor:ns-resize!important;user-select:none!important;-webkit-user-select:none!important}
-            #stops-panel .panel-drag-handle{display:flex!important;pointer-events:none!important;touch-action:none!important}
-            #stops-panel>.stops-list{flex:1 1 auto!important;min-height:0!important;width:100%!important;overflow-y:auto!important;overscroll-behavior:contain!important}
-            #stops-panel.is-collapsed{height:68px!important;min-height:68px!important;max-height:68px!important}
-            #stops-panel.is-dragging{transition:none!important}
-        }
-
-        /* Correct view switching on every viewport: the map state, not inline display,
-           owns panel visibility. This avoids the mobile display:flex !important clash. */
+        /* Panel layout source of truth: view state controls visibility; each viewport owns its geometry. */
         #main-app.map-expanded #stops-panel{display:none!important}
         #main-app:not(.map-expanded) #stops-panel{display:flex}
         @media (min-width:900px){
-            #stops-panel{
-                position:absolute!important;
-                top:18px!important;
-                bottom:18px!important;
-                left:18px!important;
-                height:auto!important;
-                max-height:none!important;
-                min-height:0!important;
-                display:flex!important;
-                flex-direction:column!important;
-                overflow:hidden!important;
-                padding:0!important;
-            }
-            #stops-panel>.panel-head{
-                flex:0 0 auto!important;
-                width:100%!important;
-                margin:0!important;
-                box-sizing:border-box!important;
-            }
-            #stops-panel>.stops-list{
-                display:flex!important;
-                flex:1 1 0!important;
-                min-height:0!important;
-                height:auto!important;
-                width:100%!important;
-                margin:0!important;
-                padding:0!important;
-                overflow-y:auto!important;
-                overflow-x:hidden!important;
-                box-sizing:border-box!important;
-            }
-            #stops-panel>.stops-list>.stop-card{
-                flex:1 1 0!important;
-                min-height:0!important;
-                width:100%!important;
-                margin:0!important;
-                box-sizing:border-box!important;
-            }
+            #stops-panel{display:flex!important;flex-direction:column!important;min-height:0!important;padding:0!important;overflow:hidden!important}
+            #stops-panel>.panel-head{flex:0 0 auto!important;width:100%!important;box-sizing:border-box!important;margin:0!important}
+            #stops-panel>.stops-list{display:flex!important;flex:1 1 0!important;flex-direction:column!important;align-self:stretch!important;width:100%!important;min-width:0!important;min-height:0!important;height:auto!important;margin:0!important;padding:0!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important;background:linear-gradient(180deg,#f5faf6,#eaf2ec)!important}
+            #stops-panel>.stops-list>.stop-card{display:grid!important;flex:1 0 auto!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding:16px 24px!important;border-radius:0!important;background:linear-gradient(90deg,#f2f8f3,#eaf3ec)!important;border-top:1px solid rgba(34,76,59,.12)!important;border-bottom:1px solid rgba(34,76,59,.08)!important}
+            #stops-panel>.stops-list>.stop-card:last-child{border-bottom:0!important}
         }
         @media (max-width:600px){
             #main-app.map-expanded #stops-panel{display:none!important}
             #main-app:not(.map-expanded) #stops-panel{display:flex!important}
-            #stops-panel{touch-action:pan-y!important}
-            #stops-panel .panel-head,
-            #stops-panel .panel-drag-handle{touch-action:none!important}
-        }
-</style>
+            #stops-panel{height:var(--panel-height,min(43dvh,440px))!important;max-height:82dvh!important;min-height:68px!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;touch-action:pan-y!important;transition:height .22s ease,border-radius .22s ease!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+            #stops-panel>.panel-head{flex:0 0 auto!important;touch-action:none!important;overscroll-behavior:none!important;cursor:ns-resize!important;user-select:none!important;-webkit-user-select:none!important}
+            #stops-panel .panel-drag-handle{display:flex!important;pointer-events:none!important;touch-action:none!important}
+            #stops-panel>.stops-list{display:block!important;flex:1 1 auto!important;min-height:0!important;width:100%!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important}
+            #stops-panel.is-collapsed{height:68px!important;min-height:68px!important;max-height:68px!important;overflow:hidden!important}
+            #stops-panel.is-dragging{transition:none!important}
+        }</style>
 </head>
 <body>
 
@@ -1029,25 +906,31 @@
 
         let currentRouteId = null;
         let initialDayNumber = 1;
-        function startApp(routeId, dayNum = 1) {
+        let telegramViewportHandler = null;
+        function lockTelegramVerticalSwipes() {
+            const webApp = window.Telegram && window.Telegram.WebApp;
+            if (!webApp) return;
             try {
-                if (window.Telegram && Telegram.WebApp) {
-                    const webApp = Telegram.WebApp;
-                    webApp.ready();
-                    const lockVerticalSwipes = () => {
-                        try {
-                            if (typeof webApp.disableVerticalSwipes === 'function') webApp.disableVerticalSwipes();
-                        } catch (e) {}
-                    };
-                    if (typeof webApp.expand === 'function') webApp.expand();
-                    lockVerticalSwipes();
-                    requestAnimationFrame(lockVerticalSwipes);
-                    setTimeout(lockVerticalSwipes, 250);
-                    if (typeof webApp.onEvent === 'function') {
-                        try { webApp.onEvent('viewportChanged', lockVerticalSwipes); } catch (e) {}
-                    }
-                }
+                webApp.ready();
+                if (typeof webApp.expand === 'function') webApp.expand();
+                if (typeof webApp.disableVerticalSwipes === 'function') webApp.disableVerticalSwipes();
             } catch (e) {}
+        }
+        function startApp(routeId, dayNum = 1) {
+            const webApp = window.Telegram && window.Telegram.WebApp;
+            if (webApp) {
+                lockTelegramVerticalSwipes();
+                if (typeof webApp.onEvent === 'function' && !telegramViewportHandler) {
+                    telegramViewportHandler = () => {
+                        lockTelegramVerticalSwipes();
+                        const stableHeight = Number(webApp.viewportStableHeight);
+                        if (stableHeight > 0) document.documentElement.style.setProperty('--app-viewport-height', stableHeight + 'px');
+                    };
+                    try { webApp.onEvent('viewportChanged', telegramViewportHandler); } catch (e) {}
+                }
+                const stableHeight = Number(webApp.viewportStableHeight);
+                if (stableHeight > 0) document.documentElement.style.setProperty('--app-viewport-height', stableHeight + 'px');
+            }
             currentRouteId = routeId;
             currentRoute = routesData[routeId];
             initialDayNumber = dayNum;
@@ -1219,6 +1102,7 @@
             panel.classList.remove('is-collapsed', 'is-dragging');
             panel.style.height = '';
             panel.style.maxHeight = '';
+            panel.style.removeProperty('--panel-height');
             panel.style.overflow = '';
             panel.innerHTML = '<div class="panel-head"><div class="panel-drag-handle" aria-hidden="true"><span></span></div><div class="panel-heading-copy"><h2>' + panelTitle + '</h2><div class="panel-meta">' + panelMeta + '</div></div><button class="panel-close" type="button" aria-label="Закрыть список мест" onclick="showMap()">×</button></div><div class="stops-list"></div>';
             const listContainer = panel.querySelector('.stops-list');
@@ -1227,7 +1111,12 @@
                 let dragStartY = 0;
                 let dragStartHeight = 0;
                 let dragPointerId = null;
-                const maxPanelHeight = () => Math.max(220, Math.floor((window.visualViewport?.height || window.innerHeight) * 0.82));
+                const maxPanelHeight = () => {
+                    const webAppHeight = Number(window.Telegram?.WebApp?.viewportStableHeight);
+                    const cssHeight = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-viewport-height'));
+                    const viewportHeight = webAppHeight || cssHeight || window.visualViewport?.height || window.innerHeight;
+                    return Math.max(220, Math.floor(viewportHeight * 0.82));
+                };
                 const setPanelHeight = height => {
                     const bounded = Math.max(68, Math.min(maxPanelHeight(), Math.round(height)));
                     panel.style.setProperty('--panel-height', bounded + 'px');
@@ -1337,8 +1226,7 @@
                 activeDayButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             }
             try { localStorage.setItem('altay-last-trip', JSON.stringify({ routeId: currentRouteId, day: dayNum })); } catch (e) {}
-            document.getElementById('stops-panel').style.display = 'block';
-            setNavActive('nav-places');
+            setNavActive(document.getElementById('main-app').classList.contains('map-expanded') ? 'nav-map' : 'nav-places');
 
             
             const infoBox = document.getElementById('route-info');
