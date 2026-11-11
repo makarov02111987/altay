@@ -1157,14 +1157,21 @@
             const firstName = locations[0]?.name || '';
             let panelTitle = 'Маршрут дня';
             let panelMeta = locations.length + ' точек · маршрут по Горному Алтаю';
-            if (firstName.includes('Курорт Манжерок')) {
+            const routeTitles = {
+                '2-days': 'Чемальская история',
+                '7-days': 'Чуйский тракт',
+                '14-days': 'Золотое кольцо Алтая'
+            };
+            const routeTitle = routeTitles[currentRouteId] || 'Маршрут по Алтаю';
+            if (currentRouteId === '2-days' && firstName.includes('Курорт Манжерок')) {
                 panelTitle = 'Первый день · Чемальская история';
                 panelMeta = '5 мест · от Манжерока до базы отдыха в Чемале';
-            } else if (firstName.includes('Остров Патмос')) {
+            } else if (currentRouteId === '2-days' && firstName.includes('Остров Патмос')) {
                 panelTitle = 'Второй день · Красоты Чемальского тракта';
                 panelMeta = '8 мест · автомобильные переезды + пешие прогулки';
             } else {
-                panelTitle = 'День ' + currentDayNumber + (currentRoute === routesData['14-days'] ? ' · Золотое кольцо Алтая' : ' · Чуйский тракт');
+                panelTitle = 'День ' + currentDayNumber + ' · ' + routeTitle;
+                panelMeta = locations.length + ' точек · ' + routeTitle;
             }
             panel.classList.remove('is-collapsed');
             panel.style.height = '';
