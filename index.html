@@ -1281,7 +1281,7 @@
                         const p = m.geometry.getCoordinates();
                         return p[0] === loc.coords[0] && p[1] === loc.coords[1];
                     });
-                    if (marker) marker.balloon.open();
+                    if (marker) openPlaceDetail(loc, currentRouteId, currentDayNumber);
                     setNavActive('nav-map');
                 };
                 cardsFragment.appendChild(card);
@@ -1326,16 +1326,13 @@
             dayData.locations.forEach((loc, index) => {
                 
                 if (!loc.coords) return;
-                const myPlacemark = new ymaps.Placemark(loc.coords, {
-                    balloonContentHeader: `<b style="color:#2c3e50">${cleanStopName(loc.name)}</b>`,
-                    balloonContentBody: `<div style="font-family:sans-serif; font-size:13px">${loc.desc}<br><br>${loc.time ? '<b>Время: ' + loc.time + '</b><br>' : ''}<a href="${yandexUrl(loc)}" target="_blank">Открыть в Яндекс Картах</a></div>`
-                }, {
-                    // Yandex Maps uses this option to size the balloon itself,
-                    // before its internal layout is rendered.
-                    balloonMaxWidth: window.matchMedia('(max-width: 899px)').matches
-                        ? Math.max(220, Math.min(340, window.innerWidth - 48))
-                        : 420,
+                const myPlacemark = new ymaps.Placemark(loc.coords, {}, {
+                    // Открываем собственную адаптивную карточку вместо balloon Яндекс Карт.
+                    hasBalloon: false,
                     preset: 'islands#blueCircleIcon'
+                });
+                myPlacemark.events.add('click', () => {
+                    openPlaceDetail(loc, currentRouteId, currentDayNumber);
                 });
 
                 
