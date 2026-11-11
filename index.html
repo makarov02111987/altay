@@ -732,7 +732,24 @@
             transition-duration:.14s!important;
         }
         html.low-performance-device .stop-media img{transition:none!important;filter:none!important}
-        </style>
+        
+        /* Фотографии маршрутов на главной вместо декоративных иконок */
+        .route-photo {
+            flex:0 0 68px;
+            width:68px;
+            height:68px;
+            display:block;
+            object-fit:cover;
+            object-position:center;
+            border-radius:15px;
+            border:1px solid rgba(255,255,255,.48);
+            box-shadow:0 5px 16px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.35);
+            background:rgba(255,255,255,.12);
+        }
+        @media(max-width:600px) {
+            .route-photo { flex-basis:58px; width:58px; height:58px; border-radius:13px; }
+        }
+</style>
 </head>
 <body>
 
@@ -747,13 +764,13 @@
             <div class="route-heading"><span>ВЫБЕРИ СВОЙ МАРШРУТ</span><i>3 путешествия</i></div>
             <div class="btn-group">
                 <button class="route-card route-card-short" onclick="startApp('2-days')">
-                    <span class="route-icon">🌿</span><span class="route-copy"><strong>Чемальская история</strong><small>Короткое знакомство с сердцем Алтая</small></span><span class="route-duration">2 ДНЯ</span><span class="route-arrow">↗</span>
+                    <img class="route-photo" src="https://club-voshod.com/files/materials/635/group_cf/ostrov_patmos_ternistyy_put_k_istokam_very_3_1.jpg" alt="Церковь на острове Патмос" loading="lazy" decoding="async"> <span class="route-copy"><strong>Чемальская история</strong><small>Короткое знакомство с сердцем Алтая</small></span><span class="route-duration">2 ДНЯ</span><span class="route-arrow">↗</span>
                 </button>
                 <button class="route-card route-card-medium" onclick="startApp('7-days')">
-                    <span class="route-icon">🏞️</span><span class="route-copy"><strong>Чуйский тракт</strong><small>Большое путешествие по главным местам</small></span><span class="route-duration">7 ДНЕЙ</span><span class="route-arrow">↗</span>
+                    <img class="route-photo" src="https://commons.wikimedia.org/wiki/Special:FilePath/Слияние_Чуи_и_Катуни.jpg?width=640" alt="Слияние Чуи и Катуни" loading="lazy" decoding="async" title="Фото: Константин Ганжа, CC BY-SA 3.0"> <span class="route-copy"><strong>Чуйский тракт</strong><small>Большое путешествие по главным местам</small></span><span class="route-duration">7 ДНЕЙ</span><span class="route-arrow">↗</span>
                 </button>
                 <button class="route-card route-card-long" onclick="startApp('14-days')">
-                    <span class="route-icon">⛰️</span><span class="route-copy"><strong>Золотое кольцо Алтая</strong><small>Путешествие от Чемала до Телецкого озера</small></span><span class="route-duration">11 ДНЕЙ</span><span class="route-arrow">↗</span>
+                    <img class="route-photo" src="https://imcdn.bolshayastrana.com/1200x00/BS_02927a9372a1b1a25e2a510ab3eba72ce28cf9ea959e21f7e875f1a00b036986.jpeg" alt="Телецкое озеро" loading="lazy" decoding="async"> <span class="route-copy"><strong>Золотое кольцо Алтая</strong><small>Путешествие от Чемала до Телецкого озера</small></span><span class="route-duration">11 ДНЕЙ</span><span class="route-arrow">↗</span>
                 </button>
             </div>
             <button id="resume-trip" type="button" onclick="resumeLastTrip()">↗ Продолжить последнее путешествие</button>
