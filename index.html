@@ -749,6 +749,14 @@
         @media(max-width:600px) {
             .route-photo { flex-basis:58px; width:58px; height:58px; border-radius:13px; }
         }
+
+        /* Чёткие векторные пиктограммы нижней навигации */
+        #mobile-nav button .nav-icon svg {
+            display:block;
+            width:21px;
+            height:21px;
+            overflow:visible;
+        }
 </style>
 </head>
 <body>
@@ -788,9 +796,9 @@
         <section id="stops-panel"></section>
         <button id="back-btn" onclick="location.reload()">⬅️</button>
         <nav id="mobile-nav" aria-label="Навигация по приложению">
-            <button id="nav-places" class="active" type="button" onclick="showPlaces()"><span class="nav-icon">☷</span><span>Места</span></button>
-            <button id="nav-map" type="button" onclick="showMap()"><span class="nav-icon">⌖</span><span>Карта</span></button>
-            <button id="nav-menu" type="button" onclick="goHome()"><span class="nav-icon">⌂</span><span>В меню</span></button>
+            <button id="nav-places" class="active" type="button" onclick="showPlaces()"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 5H20M8 12H20M8 19H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="4" cy="5" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="19" r="1" fill="currentColor"/></svg></span><span>Список</span></button>
+            <button id="nav-map" type="button" onclick="showMap()"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M15.8 8.2L13.2 13.2L8.2 15.8L10.8 10.8L15.8 8.2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 3V5M21 12H19M12 21V19M3 12H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span>Карта</span></button>
+            <button id="nav-menu" type="button" onclick="goHome()"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 10.5L12 3.8L20.5 10.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 9.5V20H18.5V9.5M9.5 20V13.5H14.5V20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>В меню</span></button>
         </nav>
     </div>
     <section id="place-detail" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Информация о достопримечательности">
